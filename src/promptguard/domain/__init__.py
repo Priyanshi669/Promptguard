@@ -1,0 +1,1 @@
+"""Core regression detection domain."""

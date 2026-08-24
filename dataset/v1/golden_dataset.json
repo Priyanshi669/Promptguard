@@ -1,0 +1,10 @@
+[
+  {
+    "id": "TC-001",
+    "input": "I was charged twice for my subscription this month.",
+    "expected_category": "billing",
+    "ideal_summary": "Customer reports being charged twice for a subscription.",
+    "expected_difficulty": "easy",
+    "notes": "Clear duplicate billing issue."
+  }
+]
