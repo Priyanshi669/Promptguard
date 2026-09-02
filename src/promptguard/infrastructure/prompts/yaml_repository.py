@@ -11,9 +11,7 @@ class PromptRepository:
         path = self.prompts_dir / f"{version}.yaml"
 
         if not path.exists():
-            raise FileNotFoundError(
-                f"Prompt version not found: {version}"
-            )
+            raise FileNotFoundError(f"Prompt version not found: {version}")
 
         with path.open("r", encoding="utf-8") as file:
             data = yaml.safe_load(file)

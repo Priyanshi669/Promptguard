@@ -10,7 +10,6 @@ from promptguard.infrastructure.llm.client import (
 
 
 class FakeLLMClient(LLMClient):
-
     async def generate(
         self,
         system_prompt: str,
@@ -38,7 +37,5 @@ async def test_llm_contract():
     )
 
     assert result.output.category == "billing"
-    assert result.output.summary == (
-        "Customer reports a duplicate charge."
-    )
+    assert result.output.summary == ("Customer reports a duplicate charge.")
     assert result.latency_ms == 10.0

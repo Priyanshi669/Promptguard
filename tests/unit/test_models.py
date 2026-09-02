@@ -15,9 +15,7 @@ def test_valid_llm_output():
     )
 
     assert output.category == "billing"
-    assert output.summary == (
-        "Customer reports being charged twice."
-    )
+    assert output.summary == ("Customer reports being charged twice.")
 
 
 def test_llm_output_rejects_empty_category():
@@ -34,6 +32,7 @@ def test_llm_output_rejects_empty_summary():
             category="billing",
             summary="",
         )
+
 
 def test_golden_test_case_creation():
     case = GoldenTestCase(
@@ -66,6 +65,7 @@ def test_llm_response_creation():
     assert response.latency_ms == 250.5
     assert response.input_tokens == 20
     assert response.output_tokens == 12
+
 
 def test_test_result_creation():
     result = EvaluationResult(
