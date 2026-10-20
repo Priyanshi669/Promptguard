@@ -1,10 +1,402 @@
 [
   {
-    "id": "TC-001",
-    "input": "I was charged twice for my subscription this month.",
-    "expected_category": "billing",
-    "ideal_summary": "Customer reports being charged twice for a subscription.",
-    "expected_difficulty": "easy",
-    "notes": "Clear duplicate billing issue."
+    "id": "banking77-001",
+    "input": "Would you please tell me the status of my refund request for a large purchase I made not long ago? I contacted the merchant nearly a week ago, but haven't received it.",
+    "expected_category": "Refund_not_showing_up",
+    "ideal_summary": "The customer is asking about the status of a refund request for a recent large purchase, noting they contacted the merchant nearly a week ago but have not received the refund.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-002",
+    "input": "Please help me with my card. It won't activate.",
+    "expected_category": "activate_my_card",
+    "ideal_summary": "Customer reports that their card will not activate and requests help.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-003",
+    "input": "I am 16 and just started working at McDonalds can I deposit my checks at your bank?",
+    "expected_category": "age_limit",
+    "ideal_summary": "A 16-year-old who just started working at McDonald's asks if they can deposit their paychecks at the bank.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-004",
+    "input": "I am having a slight problem with my American express in apple play, can you help me fix the problem with top up?",
+    "expected_category": "apple_pay_or_google_pay",
+    "ideal_summary": "Customer reports an issue with topping up their American Express card in Apple Pay and asks for assistance.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-005",
+    "input": "I need help from someone in your department with finding my nearest ATM.",
+    "expected_category": "atm_support",
+    "ideal_summary": "Customer requests assistance in locating their nearest ATM.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-006",
+    "input": "Tell me where I can find the auto top up feature and a little bit about it please.",
+    "expected_category": "automatic_top_up",
+    "ideal_summary": "The customer requests information on where to find the auto top-up feature and a brief description of it.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-007",
+    "input": "What's the time frame normally for a UK account transfer? I just made one and it's not showing up anywhere. I want to be sure that everything is good.",
+    "expected_category": "balance_not_updated_after_bank_transfer",
+    "ideal_summary": "The customer asks about the typical time frame for a UK account transfer and is concerned because a recent transfer has not appeared yet.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-008",
+    "input": "Why isn't my cheque deposit showing on my account?  I though it would be faster and would like to to look into it and help.",
+    "expected_category": "balance_not_updated_after_cheque_or_cash_deposit",
+    "ideal_summary": "Customer reports that a cheque deposit is not appearing on their account, expected faster processing, and requests investigation and assistance.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-009",
+    "input": "Why is my transfer not working? I tried multiple times to transfer money, and all that happens is an error message pops up.",
+    "expected_category": "beneficiary_not_allowed",
+    "ideal_summary": "The customer is unable to complete a money transfer, having tried multiple times, and each attempt results in an error message.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-010",
+    "input": "Yesterday, I made an incorrect payment to the wrong account for my rent payment. I need this addressed as soon as possible and the funds transferred to the correct account by no later than tomorrow.",
+    "expected_category": "cancel_transfer",
+    "ideal_summary": "Customer made an incorrect rent payment to the wrong account and requests that the funds be transferred to the correct account by tomorrow.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-011",
+    "input": "The expiration date on my card is very soon, and I need to get a new one.  What are the price and delivery options for my replacement card?",
+    "expected_category": "card_about_to_expire",
+    "ideal_summary": "The customer needs a replacement card because their current card is expiring soon and asks about the price and delivery options for the replacement.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-012",
+    "input": "What are the limits to where my card will be accepted?",
+    "expected_category": "card_acceptance",
+    "ideal_summary": "The customer asks about the limits on where their card will be accepted.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-013",
+    "input": "It's been a week since you issued me a card and I still didn't get it. Should I keep waiting?",
+    "expected_category": "card_arrival",
+    "ideal_summary": "The customer reports not receiving a card issued a week ago and asks whether to continue waiting.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-014",
+    "input": "I ordered my card and it isn't here yet. I need it ASAP. When can I expect to get it?",
+    "expected_category": "card_delivery_estimate",
+    "ideal_summary": "The customer ordered a card that has not yet arrived, needs it urgently, and asks when it will be delivered.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-015",
+    "input": "The card I thought was lost was just in my jacket, so can I reactivate it since I found it this morning?",
+    "expected_category": "card_linking",
+    "ideal_summary": "Customer found their previously lost card and asks if it can be reactivated.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-016",
+    "input": "When I was in a restaurant today my card was declined and payment wouldn't go through and I need help. Can you fix this?",
+    "expected_category": "card_not_working",
+    "ideal_summary": "Customer's card was declined at a restaurant today, preventing payment, and they are requesting assistance.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-017",
+    "input": "Why wasn't it obvious that you charge for payments? If you put the fees in an easy to read format, this could have been avoided.",
+    "expected_category": "card_payment_fee_charged",
+    "ideal_summary": "The customer is frustrated that payment fees were not clearly disclosed and suggests that fees should be presented in an easy-to-read format to avoid confusion.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-018",
+    "input": "There were a couple of payments that I have noticed on my account with my card that I didn't make. Is it possible that somebody else has my card information?",
+    "expected_category": "card_payment_not_recognised",
+    "ideal_summary": "The customer reports unauthorized payments on their card and asks if someone else might have their card information.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-019",
+    "input": "Why on earth is the exchange rate so bad?   Can I get a rate closer to the actual interbank rate?",
+    "expected_category": "card_payment_wrong_exchange_rate",
+    "ideal_summary": "The customer complains about the poor exchange rate and asks whether they can get a rate closer to the interbank rate.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-020",
+    "input": "The ATM at Metro bank on High St. Kensington didn't return my card, and the bank is now closed. How do I get back a card swallowed by an ATM?",
+    "expected_category": "card_swallowed",
+    "ideal_summary": "A customer's card was not returned by an ATM at Metro bank on High St. Kensington, the bank is closed, and they are asking how to get the card back.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-021",
+    "input": "Why was i charged for making a withdrawal? After i went grocery shopping i withdrew some money from my account and now there is another charge.",
+    "expected_category": "cash_withdrawal_charge",
+    "ideal_summary": "The customer is questioning an unexpected charge for a withdrawal made after grocery shopping.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-022",
+    "input": "There are incorrect charges on my account, there was a WD that was made by someone else.  I still have my card though.",
+    "expected_category": "cash_withdrawal_not_recognised",
+    "ideal_summary": "The customer reports incorrect charges on their account, including a withdrawal made by someone else, while they still have their card.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-023",
+    "input": "Your card pin can be changed at any Visa or MasterCard ATM with Pin services, excluding countries such as Belgium, Luxembourg, Austria, Germany, Spain, and France.",
+    "expected_category": "change_pin",
+    "ideal_summary": "The customer states that a card PIN can be changed at any Visa or MasterCard ATM with PIN services, except in Belgium, Luxembourg, Austria, Germany, Spain, and France.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-024",
+    "input": "What do I do if I think someone has used my card without permission? I can see a few transactions I don't recognize.",
+    "expected_category": "compromised_card",
+    "ideal_summary": "The customer suspects unauthorized use of their card and asks what to do about unrecognized transactions.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-025",
+    "input": "My contactless stopped working today no matter where I try to use it. How do I get it to start working again?",
+    "expected_category": "contactless_not_working",
+    "ideal_summary": "The customer's contactless payment stopped working today everywhere, and they are asking how to make it work again.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-026",
+    "input": "I live in the US and I would like to get a card. How do I go about getting one?",
+    "expected_category": "country_support",
+    "ideal_summary": "The customer, who lives in the US, is asking about the process for getting a card.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-027",
+    "input": "Why isn't my card working? I was pumped to use my new card but it keeps getting declined. Help please.",
+    "expected_category": "declined_card_payment",
+    "ideal_summary": "Customer reports that their new card is being declined and asks for help.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-028",
+    "input": "Would you please check my Card. As Withdrawal was working fine so far, but this morning suddenly got declined. Can you please check the problem?",
+    "expected_category": "declined_cash_withdrawal",
+    "ideal_summary": "The customer asks to check their card because a withdrawal that was working fine was declined this morning.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-029",
+    "input": "Transfer unable to be completed, states 'declined'",
+    "expected_category": "declined_transfer",
+    "ideal_summary": "Customer reports that their transfer was declined and could not be completed.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-030",
+    "input": "What do I do if I find a debit charge that I know I didn't do in my billing statement?",
+    "expected_category": "direct_debit_payment_not_recognised",
+    "ideal_summary": "The customer is asking what to do about a debit charge on their billing statement that they did not authorize.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-031",
+    "input": "I need several cards per day. And I need to be able to throw away all of the cards I make.",
+    "expected_category": "disposable_card_limits",
+    "ideal_summary": "The customer needs to create several cards daily and be able to throw away all of them.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-032",
+    "input": "I need to change my last name on my account because I just got married.",
+    "expected_category": "edit_personal_details",
+    "ideal_summary": "Customer requests to change their last name on their account because they recently got married.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-033",
+    "input": "My job requires me to do a lot of exchanging currency, and I was wondering about any possible discounts or lower prices.",
+    "expected_category": "exchange_charge",
+    "ideal_summary": "The customer, whose job involves frequent currency exchange, is inquiring about possible discounts or lower prices for this service.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-034",
+    "input": "Is there a specific source that the exchange rate for the transfer I'm planning on making is pulled from?",
+    "expected_category": "exchange_rate",
+    "ideal_summary": "The customer asks about the specific source of the exchange rate for an upcoming transfer.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-035",
+    "input": "I may no longer need GBP, but instead I will need AUD, how can I go about making this change?",
+    "expected_category": "exchange_via_app",
+    "ideal_summary": "The customer wants to change their currency from GBP to AUD and is asking how to do so.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-036",
+    "input": "There is some odd 1┬ú charge that appears as pending on my statement. What's that about? Pretty sure I haven't purchased anything for a pound there.",
+    "expected_category": "extra_charge_on_statement",
+    "ideal_summary": "Customer inquires about an unexplained £1 pending charge on their statement, stating they believe they haven't made any purchase for that amount.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-037",
+    "input": "Why wont the other bank take my money?? Is it not good enough?? There's sufficient funds but I keep getting denied a standard transfer. Ive tried 5 times!",
+    "expected_category": "failed_transfer",
+    "ideal_summary": "The customer is frustrated that a standard transfer to another bank is being denied despite sufficient funds, and they have attempted the transfer five times.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-038",
+    "input": "I heard that you support more than one type of fiat currency, would you tell me which ones please?",
+    "expected_category": "fiat_currency_support",
+    "ideal_summary": "The customer asks which fiat currencies are supported.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-039",
+    "input": "I want to make an online purchase but I don't want to use my credit card. Can you tell me how a disposable virtual card works and where I can apply for one?",
+    "expected_category": "get_disposable_virtual_card",
+    "ideal_summary": "The customer wants to make an online purchase without using a credit card and asks for information on how a disposable virtual card works and where to apply for one.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-040",
+    "input": "my pin hasn't arrived in the post! How do I cancel it or get a new one?",
+    "expected_category": "card_pin",
+    "ideal_summary": "Customer reports that their PIN has not arrived in the post and asks how to cancel it or obtain a new one.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Category normalized from the source label to match the PIN-related customer intent. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-041",
+    "input": "If I want to be able to give my daughter a card for my account, would I be allowed to get one for her?",
+    "expected_category": "getting_spare_card",
+    "ideal_summary": "Customer asks whether they can obtain a card for their daughter on their account.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-042",
+    "input": "I have lost my card, but need to place an online order! How do I get a virtual card instantly?",
+    "expected_category": "getting_virtual_card",
+    "ideal_summary": "The customer lost their card, needs to place an online order, and asks how to get a virtual card instantly.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-043",
+    "input": "Someone stole my wallet with my card in it while vacationing in Spain. I really need my card blocked and a new one ordered.",
+    "expected_category": "lost_or_stolen_card",
+    "ideal_summary": "The customer's wallet with their card was stolen in Spain, and they request that the card be blocked and a new one ordered.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-044",
+    "input": "I'm currently not in possession of my phone, is it still possible to go about things normally without access to the app?",
+    "expected_category": "lost_or_stolen_phone",
+    "ideal_summary": "The customer is without their phone and asks if they can still proceed normally without access to the app.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-045",
+    "input": "I would like to have a physical card to carry around and use. How can I get one?",
+    "expected_category": "order_physical_card",
+    "ideal_summary": "Customer asks how to obtain a physical card to carry and use.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-046",
+    "input": "I'm locked out of my account as I can't remember my code, what do I do now?",
+    "expected_category": "passcode_forgotten",
+    "ideal_summary": "Customer is locked out of their account because they cannot remember their code and asks what to do.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-047",
+    "input": "What's the pending length for credit transactions? I've had one in my pending category now for days and it won't move to processed.",
+    "expected_category": "pending_card_payment",
+    "ideal_summary": "The customer asks about the typical processing time for credit transactions and reports that a specific pending transaction has remained in pending status for days without moving to processed.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-048",
+    "input": "When I used one of the ATMs in the city centre today, I tried to take out some money, but for whatever reason, the machine declined my card. Just checked it out in my account and that amount is still showing as pending! Is there any way that you can cancel this transaction, because I did not receive any money whatsoever from the ATM",
+    "expected_category": "pending_cash_withdrawal",
+    "ideal_summary": "Customer attempted a withdrawal at an ATM in the city centre today, the card was declined, but the amount is still pending in their account, and they request cancellation of the transaction as they did not receive any money.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-049",
+    "input": "Why hasnt my top up gone through yet?? I thought it was suppose to be instant? Am I wrong? Why is it still pending?",
+    "expected_category": "pending_top_up",
+    "ideal_summary": "The customer is questioning why their top-up is still pending and has not gone through as they expected it to be instant.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+  },
+  {
+    "id": "banking77-050",
+    "input": "What's the time frame on EU transfers? I purchased something a couple of days ago but the seller hasn't received my payment.",
+    "expected_category": "pending_transfer",
+    "ideal_summary": "Customer asks about the time frame for EU transfers and reports that a payment made a couple of days ago has not been received by the seller.",
+    "expected_difficulty": "medium",
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
   }
 ]

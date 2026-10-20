@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-promptguard = "promptguard:main"
+promptguard = "promptguard.interfaces.cli:run"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
@@ -34,3 +34,10 @@ dev = [
     "ruff>=0.16.4",
     "types-pyyaml>=6.0.12.20260815",
 ]
+
+[[tool.mypy.overrides]]
+module = [
+    "deepeval",
+    "deepeval.*",
+]
+ignore_missing_imports = true

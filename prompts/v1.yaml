@@ -18,4 +18,8 @@ system_prompt: |
   - Preserve the important meaning of the customer's message.
   - Do not include explanations outside the requested structured output.
 
+  Always respond with a single JSON object with exactly two keys:
+  "category" (a short string naming the primary issue category) and
+  "summary" (a concise summary of the customer's message).
+
 few_shot_examples: []

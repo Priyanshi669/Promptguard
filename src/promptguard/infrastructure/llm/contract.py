@@ -1,18 +1,10 @@
-"""LLM client contract."""
+"""LLM client contract.
 
-from abc import ABC, abstractmethod
+The canonical contract lives in the application layer so application
+services never depend on infrastructure. This module re-exports it so
+infrastructure providers keep a stable import path.
+"""
 
-from promptguard.domain.models import LLMResponse
+from promptguard.application.contracts import LLMClient
 
-
-class LLMClient(ABC):
-    """Abstract contract for LLM providers."""
-
-    @abstractmethod
-    async def generate(
-        self,
-        system_prompt: str,
-        user_input: str,
-    ) -> LLMResponse:
-        """Generate a structured response from an LLM."""
-        raise NotImplementedError
+__all__ = ["LLMClient"]

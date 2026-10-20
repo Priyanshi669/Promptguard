@@ -1,6 +1,10 @@
+from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from promptguard.domain.drift import CategoryDriftResult
+from promptguard.domain.regression import RegressionResult
 
 Difficulty = Literal["easy", "medium", "hard"]
 
@@ -59,6 +63,9 @@ class EvaluationResult(BaseModel):
     expected_category: str
     actual_category: str
 
+    normalized_category: str = ""
+    normalization_applied: bool = False
+
     expected_summary: str
     actual_summary: str
 
@@ -73,3 +80,30 @@ class EvaluationResult(BaseModel):
 
     input_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def _default_normalized_category(self) -> "EvaluationResult":
+        """Backfill normalized_category from actual_category when unset."""
+        if not self.normalized_category:
+            self.normalized_category = self.actual_category
+        return self
+
+
+class EvaluationReport(BaseModel):
+    """Complete, infrastructure-independent record of an evaluation run."""
+
+    run_id: str
+    timestamp: datetime
+    prompt_version: str
+    model: str
+    dataset: str
+    case_count: int = Field(ge=0)
+    category_accuracy: float = Field(ge=0, le=1)
+    average_summary_score: float = Field(ge=0, le=5)
+    average_latency_ms: float = Field(ge=0)
+    total_input_tokens: int = Field(ge=0)
+    total_output_tokens: int = Field(ge=0)
+    results: list[EvaluationResult]
+    baseline_run_id: str | None = None
+    regression: RegressionResult | None = None
+    drift: CategoryDriftResult | None = None

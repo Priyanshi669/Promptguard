@@ -18,6 +18,8 @@ class Settings(BaseSettings):
 
     nvidia_model: str = Field(..., min_length=1)
 
+    slack_webhook_url: str | None = Field(default=None)
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

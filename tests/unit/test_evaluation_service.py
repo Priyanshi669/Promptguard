@@ -48,11 +48,14 @@ def mock_llm_client() -> AsyncMock:
 async def test_evaluate_returns_evaluation_result(
     golden_test_case: GoldenTestCase,
     mock_llm_client: AsyncMock,
+    mock_summary_metric: AsyncMock,
 ) -> None:
     """Service should convert an LLM response into an evaluation result."""
 
-    service = EvaluationService(mock_llm_client)
-
+    service = EvaluationService(
+    llm_client=mock_llm_client,
+    summary_metric=mock_summary_metric,
+)
     result = await service.evaluate(
         test_case=golden_test_case,
         system_prompt="Classify the customer message.",
@@ -82,6 +85,7 @@ async def test_evaluate_returns_evaluation_result(
 async def test_evaluate_detects_category_mismatch(
     golden_test_case: GoldenTestCase,
     mock_llm_client: AsyncMock,
+    mock_summary_metric: AsyncMock,
 ) -> None:
     """Service should detect an incorrect category."""
 
@@ -95,7 +99,10 @@ async def test_evaluate_detects_category_mismatch(
         output_tokens=10,
     )
 
-    service = EvaluationService(mock_llm_client)
+    service = EvaluationService(
+    llm_client=mock_llm_client,
+    summary_metric=mock_summary_metric,
+)
 
     result = await service.evaluate(
         test_case=golden_test_case,
@@ -111,10 +118,14 @@ async def test_evaluate_detects_category_mismatch(
 async def test_evaluate_sends_correct_input_to_llm(
     golden_test_case: GoldenTestCase,
     mock_llm_client: AsyncMock,
+    mock_summary_metric: AsyncMock,
 ) -> None:
     """Service should pass the golden test input to the LLM client."""
 
-    service = EvaluationService(mock_llm_client)
+    service = EvaluationService(
+    llm_client=mock_llm_client,
+    summary_metric=mock_summary_metric,
+)
 
     await service.evaluate(
         test_case=golden_test_case,
@@ -125,3 +136,37 @@ async def test_evaluate_sends_correct_input_to_llm(
         system_prompt="Classify the customer message.",
         user_input="I was charged twice for the same order.",
     )
+
+
+@pytest.mark.asyncio
+async def test_evaluate_dataset_uses_fake_infrastructure(
+    golden_test_case: GoldenTestCase,
+    mock_llm_client: AsyncMock,
+    mock_summary_metric: AsyncMock,
+) -> None:
+    """The complete application flow should work without external services."""
+    second_case = golden_test_case.model_copy(update={"id": "case-002"})
+    service = EvaluationService(
+        llm_client=mock_llm_client,
+        summary_metric=mock_summary_metric,
+    )
+
+    results = await service.evaluate_dataset(
+        test_cases=[golden_test_case, second_case],
+        system_prompt="Classify the customer message.",
+    )
+
+    assert [result.test_case_id for result in results] == [
+        "case-001",
+        "case-002",
+    ]
+    assert all(result.category_match for result in results)
+    assert mock_llm_client.generate.await_count == 2
+    assert mock_summary_metric.score.await_count == 2
+
+@pytest.fixture
+def mock_summary_metric() -> AsyncMock:
+    """Provide a mock summary metric."""
+    metric = AsyncMock()
+    metric.score.return_value = 5.0
+    return metric    

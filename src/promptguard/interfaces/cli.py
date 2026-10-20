@@ -1,1 +1,217 @@
-"""Command-line interface for Promptguard."""
+"""Command-line interface for PromptGuard."""
+
+import argparse
+import asyncio
+import sys
+from pathlib import Path
+
+from promptguard.application.comparison_service import (
+    ComparisonService,
+    RegressionService,
+)
+from promptguard.application.contracts import (
+    EvaluationRunRepository,
+    Notifier,
+    ReportFormatter,
+)
+from promptguard.application.drift_service import DriftService
+from promptguard.application.evaluation_service import EvaluationService
+from promptguard.application.reporting_service import ReportingService
+from promptguard.application.run_service import EvaluationRunService
+from promptguard.config import get_settings
+from promptguard.domain.models import GoldenTestCase
+from promptguard.domain.thresholds import RegressionThresholds
+from promptguard.infrastructure.dataset.json_repository import JsonDatasetRepository
+from promptguard.infrastructure.evaluation.deepeval_metrics import DeepEvalSummaryMetric
+from promptguard.infrastructure.llm.client import NVIDIAClient
+from promptguard.infrastructure.notifications.slack import NoopNotifier, SlackNotifier
+from promptguard.infrastructure.persistence.repositories import (
+    JsonEvaluationRunRepository,
+)
+from promptguard.infrastructure.prompts.yaml_repository import PromptRepository
+from promptguard.infrastructure.reporting.html_renderer import TextReportFormatter
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+DEFAULT_PROMPT_VERSION = "v1"
+LATEST_BASELINE = "latest"
+
+
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments."""
+    parser = argparse.ArgumentParser(prog="promptguard")
+    parser.add_argument("--prompt-version", default=DEFAULT_PROMPT_VERSION)
+    parser.add_argument(
+        "--baseline",
+        default=None,
+        help="Baseline run ID, or 'latest' for the most recent persisted run.",
+    )
+    parser.add_argument("--runs-dir", default=str(PROJECT_ROOT / "runs"))
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Evaluate only the first N cases (useful for smoke runs).",
+    )
+    parser.add_argument(
+        "--min-category-accuracy", type=float, default=None,
+        help="Fail the run when category accuracy falls below this value.",
+    )
+    parser.add_argument(
+        "--min-summary-score", type=float, default=None,
+        help="Fail the run when average summary score falls below this value.",
+    )
+    parser.add_argument(
+        "--max-latency-ms", type=float, default=None,
+        help="Fail the run when average latency exceeds this value.",
+    )
+    return parser.parse_args(argv)
+
+
+def _build_thresholds(args: argparse.Namespace) -> RegressionThresholds | None:
+    """Build regression thresholds from CLI flags, if any are set."""
+    if (
+        args.min_category_accuracy is None
+        and args.min_summary_score is None
+        and args.max_latency_ms is None
+    ):
+        return None
+    return RegressionThresholds(
+        minimum_category_accuracy=args.min_category_accuracy,
+        minimum_summary_score=args.min_summary_score,
+        maximum_average_latency_ms=args.max_latency_ms,
+    )
+
+
+def _build_notifier() -> Notifier:
+    """Return Slack notifications when configured, else a safe default."""
+    settings = get_settings()
+    if settings.slack_webhook_url:
+        return SlackNotifier(settings.slack_webhook_url)
+    return NoopNotifier()
+
+
+def _apply_limit(
+    test_cases: list[GoldenTestCase], limit: int | None,
+) -> list[GoldenTestCase]:
+    """Return the first N cases when a limit is configured."""
+    if limit is None:
+        return test_cases
+    if limit < 0:
+        raise ValueError("--limit must be non-negative.")
+    return test_cases[:limit]
+
+
+def _extract_system_prompt(prompt_config: dict) -> str:
+    """Extract the system prompt from the prompt configuration."""
+    system_prompt = prompt_config.get("system_prompt")
+
+    if not isinstance(system_prompt, str) or not system_prompt.strip():
+        raise ValueError(
+            "Prompt configuration must contain a non-empty 'system_prompt'."
+        )
+
+    return system_prompt
+
+
+def _extract_categories(prompt_config: dict) -> list[str]:
+    """Extract the allowed category taxonomy from prompt config, if present."""
+    categories = prompt_config.get("categories", [])
+    if not isinstance(categories, list):
+        return []
+    return [str(c) for c in categories]
+
+
+def _extract_aliases(prompt_config: dict) -> dict[str, str]:
+    """Extract category aliases from prompt config, if present."""
+    aliases = prompt_config.get("category_aliases", {})
+    if not isinstance(aliases, dict):
+        return {}
+    return {str(k): str(v) for k, v in aliases.items()}
+
+
+def _build_run_service(
+    prompt_version: str,
+    runs_dir: Path,
+    notifier: Notifier,
+) -> tuple[EvaluationRunService, str, list]:
+    """Wire the orchestrator with concrete infrastructure adapters."""
+    dataset_path = PROJECT_ROOT / "dataset" / prompt_version / "golden_dataset.json"
+    prompts_dir = PROJECT_ROOT / "prompts"
+
+    test_cases = JsonDatasetRepository(dataset_path).load()
+    prompt_config = PromptRepository(prompts_dir).load(prompt_version)
+    system_prompt = _extract_system_prompt(prompt_config)
+    categories = _extract_categories(prompt_config)
+    aliases = _extract_aliases(prompt_config)
+
+    evaluation_service = EvaluationService(
+        llm_client=NVIDIAClient(),
+        summary_metric=DeepEvalSummaryMetric(),
+        allowed_categories=categories,
+        category_aliases=aliases,
+    )
+
+    repository: EvaluationRunRepository = JsonEvaluationRunRepository(runs_dir)
+    formatter: ReportFormatter = TextReportFormatter()
+
+    run_service = EvaluationRunService(
+        evaluation_service=evaluation_service,
+        reporting_service=ReportingService(),
+        comparison_service=ComparisonService(),
+        regression_service=RegressionService(),
+        drift_service=DriftService(),
+        repository=repository,
+        formatter=formatter,
+        notifier=notifier,
+    )
+    return run_service, system_prompt, test_cases
+
+
+async def _run(argv: list[str] | None = None) -> int:
+    """Run the evaluation pipeline and return the process exit code."""
+    args = _parse_args(argv)
+    settings = get_settings()
+
+    run_service, system_prompt, test_cases = _build_run_service(
+        prompt_version=args.prompt_version,
+        runs_dir=Path(args.runs_dir),
+        notifier=_build_notifier(),
+    )
+    test_cases = _apply_limit(test_cases, args.limit)
+
+    outcome = await run_service.run(
+        test_cases=test_cases,
+        system_prompt=system_prompt,
+        prompt_version=args.prompt_version,
+        model=settings.nvidia_model,
+        dataset=f"golden-{args.prompt_version}",
+        thresholds=_build_thresholds(args),
+        baseline_run_id=args.baseline,
+    )
+
+    if outcome.report_text is not None:
+        print(outcome.report_text)
+
+    if outcome.report.regression is not None:
+        return 0 if outcome.report.regression.passed else 1
+    return 0
+
+
+def _configure_console_output() -> None:
+    """Keep console printing alive for characters the console cannot encode."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
+
+
+def run() -> None:
+    """Run the CLI."""
+    _configure_console_output()
+    try:
+        exit_code = asyncio.run(_run())
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"PromptGuard failed: {exc}")
+        raise SystemExit(2) from exc
+    raise SystemExit(exit_code)
