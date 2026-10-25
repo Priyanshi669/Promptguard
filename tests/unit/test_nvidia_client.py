@@ -2,7 +2,16 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
+from openai import (
+    APIConnectionError,
+    APITimeoutError,
+    AsyncOpenAI,
+    InternalServerError,
+    RateLimitError,
+)
+from tenacity.wait import wait_none
 
 from promptguard.domain.models import LLMOutput
 from promptguard.infrastructure.llm.client import NVIDIAClient
@@ -15,6 +24,9 @@ def mock_settings() -> MagicMock:
     settings.nvidia_api_key = "test-api-key"
     settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
     settings.nvidia_model = "test-model"
+    settings.nvidia_request_timeout_seconds = 10.0
+    settings.nvidia_temperature = None
+    settings.nvidia_seed = None
     return settings
 
 
@@ -22,6 +34,67 @@ def mock_settings() -> MagicMock:
 def mock_openai_client() -> AsyncMock:
     """Return a mocked OpenAI-compatible client."""
     return AsyncMock()
+
+
+def test_client_owns_retry_budget_and_timeout(
+    mock_settings: MagicMock,
+) -> None:
+    """The SDK must not add retries or override the request timeout."""
+    with patch(
+        "promptguard.infrastructure.llm.client.get_settings",
+        return_value=mock_settings,
+    ):
+        client = NVIDIAClient()
+
+    assert client._client.max_retries == 0
+    assert client._client.timeout == 10.0
+
+
+@pytest.mark.asyncio
+async def test_total_http_attempts_match_application_retry_budget(
+    mock_settings: MagicMock,
+) -> None:
+    """A 5xx response should produce exactly three HTTP attempts."""
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        return httpx.Response(
+            500,
+            json={"error": {"message": "transient"}},
+        )
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler),
+    ) as http_client:
+        sdk = AsyncOpenAI(
+            api_key="test-api-key",
+            base_url="https://example.invalid/v1",
+            http_client=http_client,
+            timeout=10.0,
+            max_retries=0,
+        )
+        with patch(
+            "promptguard.infrastructure.llm.client.get_settings",
+            return_value=mock_settings,
+        ):
+            client = NVIDIAClient(client=sdk)
+
+        with (
+            patch.object(
+                NVIDIAClient._call_llm.retry,
+                "wait",
+                wait_none(),
+            ),
+            pytest.raises(InternalServerError),
+        ):
+            await client.generate(
+                system_prompt="Classify.",
+                user_input="Test input.",
+            )
+
+    assert attempts == 3
 
 
 @pytest.mark.asyncio
@@ -155,6 +228,8 @@ async def test_generate_rejects_invalid_json(
                 user_input="Test input.",
             )
 
+    assert mock_openai_client.chat.completions.create.await_count == 1
+
 
 @pytest.mark.asyncio
 async def test_generate_rejects_invalid_output_schema(
@@ -194,6 +269,8 @@ async def test_generate_rejects_invalid_output_schema(
                 user_input="Test input.",
             )
 
+    assert mock_openai_client.chat.completions.create.await_count == 1
+
 
 @pytest.mark.asyncio
 async def test_generate_rejects_empty_response(
@@ -230,6 +307,10 @@ async def test_generate_rejects_empty_response(
                 system_prompt="Classify.",
                 user_input="Test input.",
             )
+
+    assert mock_openai_client.chat.completions.create.await_count == 1
+
+
 @pytest.mark.asyncio
 async def test_generate_retries_on_connection_error(
     mock_settings: MagicMock,
@@ -260,6 +341,115 @@ async def test_generate_retries_on_connection_error(
     ):
         client = NVIDIAClient(client=mock_openai_client)
 
+        result = await client.generate(
+            system_prompt="Classify.",
+            user_input="I want a refund.",
+        )
+
+    assert result.output.category == "billing"
+    assert mock_openai_client.chat.completions.create.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_generate_retries_on_openai_connection_error(
+    mock_settings: MagicMock,
+    mock_openai_client: AsyncMock,
+) -> None:
+    """OpenAI SDK connection errors should use the same retry policy."""
+    mock_response = MagicMock()
+    mock_response.choices = [
+        MagicMock(
+            message=MagicMock(
+                content='{"category": "billing", "summary": "Refund request."}'
+            )
+        )
+    ]
+    mock_response.usage = MagicMock(prompt_tokens=10, completion_tokens=5)
+    request = httpx.Request("POST", "https://example.com/chat/completions")
+
+    mock_openai_client.chat.completions.create.side_effect = [
+        APIConnectionError(request=request),
+        mock_response,
+    ]
+
+    with patch(
+        "promptguard.infrastructure.llm.client.get_settings",
+        return_value=mock_settings,
+    ):
+        client = NVIDIAClient(client=mock_openai_client)
+        result = await client.generate(
+            system_prompt="Classify.",
+            user_input="I want a refund.",
+        )
+
+    assert result.output.category == "billing"
+    assert mock_openai_client.chat.completions.create.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_generate_retries_on_timeout(
+    mock_settings: MagicMock,
+    mock_openai_client: AsyncMock,
+) -> None:
+    """Timeouts are transient and should be retried."""
+    mock_response = MagicMock()
+    mock_response.choices = [
+        MagicMock(
+            message=MagicMock(
+                content='{"category": "billing", "summary": "Refund request."}'
+            )
+        )
+    ]
+    mock_response.usage = MagicMock(prompt_tokens=10, completion_tokens=5)
+    request = httpx.Request("POST", "https://example.com/chat/completions")
+
+    mock_openai_client.chat.completions.create.side_effect = [
+        APITimeoutError(request=request),
+        mock_response,
+    ]
+
+    with patch(
+        "promptguard.infrastructure.llm.client.get_settings",
+        return_value=mock_settings,
+    ):
+        client = NVIDIAClient(client=mock_openai_client)
+        result = await client.generate(
+            system_prompt="Classify.",
+            user_input="I want a refund.",
+        )
+
+    assert result.output.category == "billing"
+    assert mock_openai_client.chat.completions.create.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_generate_retries_on_server_error(
+    mock_settings: MagicMock,
+    mock_openai_client: AsyncMock,
+) -> None:
+    """Provider 5xx errors are transient and should be retried."""
+    mock_response = MagicMock()
+    mock_response.choices = [
+        MagicMock(
+            message=MagicMock(
+                content='{"category": "billing", "summary": "Refund request."}'
+            )
+        )
+    ]
+    mock_response.usage = MagicMock(prompt_tokens=10, completion_tokens=5)
+    request = httpx.Request("POST", "https://example.com/chat/completions")
+    response = httpx.Response(500, request=request)
+
+    mock_openai_client.chat.completions.create.side_effect = [
+        InternalServerError("server error", response=response, body=None),
+        mock_response,
+    ]
+
+    with patch(
+        "promptguard.infrastructure.llm.client.get_settings",
+        return_value=mock_settings,
+    ):
+        client = NVIDIAClient(client=mock_openai_client)
         result = await client.generate(
             system_prompt="Classify.",
             user_input="I want a refund.",
@@ -355,4 +545,81 @@ async def test_generate_stops_after_three_attempts(
                 user_input="Test input.",
             )
 
-    assert mock_openai_client.chat.completions.create.await_count == 3                
+    assert mock_openai_client.chat.completions.create.await_count == 3
+
+
+def rate_limit_error() -> RateLimitError:
+    """Build a 429 error matching the OpenAI client's exception type."""
+    request = httpx.Request("POST", "https://example.com/chat/completions")
+    response = httpx.Response(429, request=request)
+    return RateLimitError("rate limited", response=response, body=None)
+
+
+@pytest.mark.asyncio
+async def test_generate_retries_on_rate_limit_error(
+    mock_settings: MagicMock,
+    mock_openai_client: AsyncMock,
+) -> None:
+    """Client should retry when the provider returns HTTP 429."""
+    mock_response = MagicMock()
+    mock_response.choices = [
+        MagicMock(
+            message=MagicMock(
+                content='{"category": "billing", "summary": "Refund request."}'
+            )
+        )
+    ]
+    mock_response.usage = MagicMock(prompt_tokens=10, completion_tokens=5)
+
+    mock_openai_client.chat.completions.create.side_effect = [
+        rate_limit_error(),
+        mock_response,
+    ]
+
+    with patch(
+        "promptguard.infrastructure.llm.client.get_settings",
+        return_value=mock_settings,
+    ):
+        client = NVIDIAClient(client=mock_openai_client)
+        result = await client.generate(
+            system_prompt="Classify.",
+            user_input="I want a refund.",
+        )
+
+    assert result.output.category == "billing"
+    assert mock_openai_client.chat.completions.create.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_generate_forwards_temperature_and_seed(
+    mock_settings: MagicMock,
+    mock_openai_client: AsyncMock,
+) -> None:
+    """Configured sampling controls should be sent to the provider."""
+    mock_settings.nvidia_temperature = 0.0
+    mock_settings.nvidia_seed = 42
+
+    mock_response = MagicMock()
+    mock_response.choices = [
+        MagicMock(
+            message=MagicMock(
+                content='{"category": "billing", "summary": "Refund request."}'
+            )
+        )
+    ]
+    mock_response.usage = MagicMock(prompt_tokens=10, completion_tokens=5)
+    mock_openai_client.chat.completions.create.return_value = mock_response
+
+    with patch(
+        "promptguard.infrastructure.llm.client.get_settings",
+        return_value=mock_settings,
+    ):
+        client = NVIDIAClient(client=mock_openai_client)
+        await client.generate(
+            system_prompt="Classify.",
+            user_input="I want a refund.",
+        )
+
+    request = mock_openai_client.chat.completions.create.await_args.kwargs
+    assert request["temperature"] == 0.0
+    assert request["seed"] == 42

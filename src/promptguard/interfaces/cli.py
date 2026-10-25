@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import sys
 from pathlib import Path
+from typing import Any
 
 from promptguard.application.comparison_service import (
     ComparisonService,
@@ -19,7 +20,7 @@ from promptguard.application.evaluation_service import EvaluationService
 from promptguard.application.reporting_service import ReportingService
 from promptguard.application.run_service import EvaluationRunService
 from promptguard.config import get_settings
-from promptguard.domain.models import GoldenTestCase
+from promptguard.domain.models import EvaluationReport, GoldenTestCase
 from promptguard.domain.thresholds import RegressionThresholds
 from promptguard.infrastructure.dataset.json_repository import JsonDatasetRepository
 from promptguard.infrastructure.evaluation.deepeval_metrics import DeepEvalSummaryMetric
@@ -51,7 +52,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--limit",
         type=int,
         default=None,
-        help="Evaluate only the first N cases (useful for smoke runs).",
+        help="Evaluate only the first N cases (N must be at least 1).",
     )
     parser.add_argument(
         "--min-category-accuracy", type=float, default=None,
@@ -65,6 +66,22 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--max-latency-ms", type=float, default=None,
         help="Fail the run when average latency exceeds this value.",
     )
+    parser.add_argument(
+        "--max-category-accuracy-drop", type=float, default=None,
+        help="Fail when category accuracy drops by more than this absolute amount.",
+    )
+    parser.add_argument(
+        "--max-summary-score-drop", type=float, default=None,
+        help="Fail when average summary score drops by more than this absolute amount.",
+    )
+    parser.add_argument(
+        "--max-category-accuracy-drop-pct", type=float, default=None,
+        help="Fail when category accuracy drops by more than this percentage.",
+    )
+    parser.add_argument(
+        "--max-summary-score-drop-pct", type=float, default=None,
+        help="Fail when average summary score drops by more than this percentage.",
+    )
     return parser.parse_args(argv)
 
 
@@ -74,12 +91,22 @@ def _build_thresholds(args: argparse.Namespace) -> RegressionThresholds | None:
         args.min_category_accuracy is None
         and args.min_summary_score is None
         and args.max_latency_ms is None
+        and args.max_category_accuracy_drop is None
+        and args.max_summary_score_drop is None
+        and args.max_category_accuracy_drop_pct is None
+        and args.max_summary_score_drop_pct is None
     ):
         return None
     return RegressionThresholds(
         minimum_category_accuracy=args.min_category_accuracy,
         minimum_summary_score=args.min_summary_score,
         maximum_average_latency_ms=args.max_latency_ms,
+        maximum_category_accuracy_drop=args.max_category_accuracy_drop,
+        maximum_summary_score_drop=args.max_summary_score_drop,
+        maximum_category_accuracy_drop_pct=(
+            args.max_category_accuracy_drop_pct
+        ),
+        maximum_summary_score_drop_pct=args.max_summary_score_drop_pct,
     )
 
 
@@ -97,8 +124,8 @@ def _apply_limit(
     """Return the first N cases when a limit is configured."""
     if limit is None:
         return test_cases
-    if limit < 0:
-        raise ValueError("--limit must be non-negative.")
+    if limit <= 0:
+        raise ValueError("--limit must be at least 1.")
     return test_cases[:limit]
 
 
@@ -134,16 +161,23 @@ def _build_run_service(
     prompt_version: str,
     runs_dir: Path,
     notifier: Notifier,
-) -> tuple[EvaluationRunService, str, list]:
+) -> tuple[EvaluationRunService, str, list, dict[str, Any]]:
     """Wire the orchestrator with concrete infrastructure adapters."""
     dataset_path = PROJECT_ROOT / "dataset" / prompt_version / "golden_dataset.json"
     prompts_dir = PROJECT_ROOT / "prompts"
+    settings = get_settings()
 
     test_cases = JsonDatasetRepository(dataset_path).load()
     prompt_config = PromptRepository(prompts_dir).load(prompt_version)
     system_prompt = _extract_system_prompt(prompt_config)
     categories = _extract_categories(prompt_config)
     aliases = _extract_aliases(prompt_config)
+    eval_config: dict[str, Any] = {
+        "categories": categories,
+        "category_aliases": aliases,
+        "temperature": settings.nvidia_temperature,
+        "seed": settings.nvidia_seed,
+    }
 
     evaluation_service = EvaluationService(
         llm_client=NVIDIAClient(),
@@ -165,7 +199,7 @@ def _build_run_service(
         formatter=formatter,
         notifier=notifier,
     )
-    return run_service, system_prompt, test_cases
+    return run_service, system_prompt, test_cases, eval_config
 
 
 async def _run(argv: list[str] | None = None) -> int:
@@ -173,29 +207,50 @@ async def _run(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     settings = get_settings()
 
-    run_service, system_prompt, test_cases = _build_run_service(
+    run_service, system_prompt, test_cases, eval_config = _build_run_service(
         prompt_version=args.prompt_version,
         runs_dir=Path(args.runs_dir),
         notifier=_build_notifier(),
     )
     test_cases = _apply_limit(test_cases, args.limit)
 
-    outcome = await run_service.run(
-        test_cases=test_cases,
-        system_prompt=system_prompt,
-        prompt_version=args.prompt_version,
-        model=settings.nvidia_model,
-        dataset=f"golden-{args.prompt_version}",
-        thresholds=_build_thresholds(args),
-        baseline_run_id=args.baseline,
-    )
+    try:
+        async with asyncio.timeout(settings.evaluation_timeout_seconds):
+            outcome = await run_service.run(
+                test_cases=test_cases,
+                system_prompt=system_prompt,
+                prompt_version=args.prompt_version,
+                model=settings.nvidia_model,
+                dataset=f"golden-{args.prompt_version}",
+                thresholds=_build_thresholds(args),
+                baseline_run_id=args.baseline,
+                eval_config=eval_config,
+            )
+    except TimeoutError as exc:
+        raise RuntimeError(
+            "Evaluation exceeded the configured run timeout "
+            f"({settings.evaluation_timeout_seconds:g}s)."
+        ) from exc
 
     if outcome.report_text is not None:
         print(outcome.report_text)
 
-    if outcome.report.regression is not None:
-        return 0 if outcome.report.regression.passed else 1
-    return 0
+    if outcome.notification_error is not None:
+        print(f"Warning: {outcome.notification_error}", file=sys.stderr)
+
+    return _exit_code_for(outcome.report)
+
+
+def _exit_code_for(report: EvaluationReport) -> int:
+    """Map a completed report to a distinct process exit code."""
+    if report.regression is None:
+        return 2
+    status = report.regression.status
+    if status == "PASS":
+        return 0
+    if status == "FAIL":
+        return 1
+    return 2
 
 
 def _configure_console_output() -> None:
@@ -211,7 +266,7 @@ def run() -> None:
     _configure_console_output()
     try:
         exit_code = asyncio.run(_run())
-    except (FileNotFoundError, ValueError) as exc:
+    except Exception as exc:
         print(f"PromptGuard failed: {exc}")
         raise SystemExit(2) from exc
     raise SystemExit(exit_code)

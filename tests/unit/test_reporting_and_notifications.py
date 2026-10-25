@@ -5,7 +5,10 @@ from unittest.mock import patch
 
 import pytest
 
-from promptguard.application.comparison_service import RegressionService
+from promptguard.application.comparison_service import (
+    ComparisonService,
+    RegressionService,
+)
 from promptguard.application.reporting_service import ReportingService
 from promptguard.domain.drift import CategoryDriftResult
 from promptguard.domain.models import EvaluationReport, EvaluationResult
@@ -78,6 +81,37 @@ def test_formatter_shows_passing_regression() -> None:
     assert "Threshold violations: none" in text
 
 
+def test_formatter_reports_inconclusive_status_and_reasons() -> None:
+    """An inconclusive gate should not be rendered as a failure."""
+    report = ReportingService().build_report([result()], "v1", "m", "d")
+    report.regression = RegressionService().evaluate(
+        report, RegressionThresholds(),
+    )
+    text = TextReportFormatter().format(report)
+    assert "Regression status: INCONCLUSIVE" in text
+    assert "Incompatibility:" in text
+
+
+def test_formatter_shows_eval_config_hash() -> None:
+    """The reproducibility fingerprint should be visible in the report."""
+    report = ReportingService().build_report(
+        [result()], "v1", "m", "d", eval_config_hash="abc123",
+    )
+    text = TextReportFormatter().format(report)
+    assert "Eval config hash: abc123" in text
+
+
+def test_formatter_shows_gate_thresholds() -> None:
+    """Persisted gate policy should be visible with the report."""
+    thresholds = RegressionThresholds(minimum_category_accuracy=0.8)
+    report = ReportingService().build_report(
+        [result()], "v1", "m", "d", thresholds=thresholds,
+    )
+    text = TextReportFormatter().format(report)
+    assert "Gate thresholds:" in text
+    assert "minimum_category_accuracy: 0.8" in text
+
+
 def test_formatter_reports_unevaluated_regression() -> None:
     """Without thresholds the report should say regression was not evaluated."""
     report = ReportingService().build_report([result()], "v1", "m", "d")
@@ -115,6 +149,24 @@ def test_formatter_shows_baseline_run() -> None:
     assert "Baseline run: abc-123" in text
 
 
+def test_formatter_shows_persisted_comparison_deltas() -> None:
+    """Comparison evidence should be visible after a baseline comparison."""
+    baseline = ReportingService().build_report(
+        [result()], "v1", "m", "d",
+    )
+    current = ReportingService().build_report(
+        [result(False)], "v1", "m", "d",
+    )
+    current.baseline_run_id = baseline.run_id
+    current.comparison = ComparisonService().compare(baseline, current)
+
+    text = TextReportFormatter().format(current)
+
+    assert "Comparison deltas:" in text
+    assert "Category accuracy: -100.00%" in text
+    assert "(baseline 100.00%, current 0.00%)" in text
+
+
 @pytest.mark.asyncio
 async def test_noop_notifier_accepts_messages() -> None:
     """The safe default notifier should never raise or send."""
@@ -129,9 +181,11 @@ async def test_slack_notifier_posts_to_webhook() -> None:
     def fake_urlopen(request, timeout=None):
         recorded["url"] = request.full_url
         recorded["data"] = request.data
+        recorded["timeout"] = timeout
 
     with patch.object(urllib.request, "urlopen", fake_urlopen):
         await SlackNotifier("https://hooks.example.com/tok").notify("run done")
 
     assert recorded["url"].startswith("https://hooks.example.com/tok")
     assert b"run done" in recorded["data"]
+    assert recorded["timeout"] == 10

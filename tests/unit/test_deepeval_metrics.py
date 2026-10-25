@@ -1,5 +1,6 @@
 """Unit tests for DeepEval summary scoring."""
 
+import math
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -12,19 +13,27 @@ from promptguard.infrastructure.evaluation.deepeval_metrics import (
 @pytest.mark.parametrize(
     ("raw_score", "expected_score"),
     [
-        (-0.5, 1.0),
         (0.0, 1.0),
         (0.5, 3.0),
         (1.0, 5.0),
-        (2.0, 5.0),
     ],
 )
-def test_normalize_score_bounds_to_domain_range(
+def test_normalize_score_maps_valid_domain_range(
     raw_score: float,
     expected_score: float,
 ) -> None:
-    """DeepEval's score should be converted and bounded to the 1-5 domain."""
+    """Valid DeepEval scores should map to the project's 1-5 scale."""
     assert DeepEvalSummaryMetric._normalize_score(raw_score) == expected_score
+
+
+@pytest.mark.parametrize(
+    "raw_score",
+    [-0.5, 1.5, 2.0, math.nan, math.inf, -math.inf],
+)
+def test_normalize_score_rejects_invalid_scores(raw_score: float) -> None:
+    """Invalid judge evidence must not be clamped into a passing score."""
+    with pytest.raises(ValueError, match="finite number between 0 and 1"):
+        DeepEvalSummaryMetric._normalize_score(raw_score)
 
 
 @pytest.mark.asyncio

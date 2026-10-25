@@ -35,4 +35,4 @@ class SlackNotifier(Notifier):
 
 def _post(request: urllib.request.Request) -> None:
     """Perform the blocking webhook request off the event loop."""
-    urllib.request.urlopen(request)
+    urllib.request.urlopen(request, timeout=10)

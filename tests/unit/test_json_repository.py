@@ -47,6 +47,35 @@ def test_load_rejects_invalid_case(tmp_path) -> None:
         JsonDatasetRepository(path).load()
 
 
+@pytest.mark.parametrize(
+    "field",
+    ["id", "input", "expected_category", "ideal_summary"],
+)
+def test_load_rejects_blank_required_case_text(
+    tmp_path,
+    field: str,
+) -> None:
+    """Blank dataset evidence must fail before evaluation starts."""
+    record = valid_case()
+    record[field] = "   "
+    path = tmp_path / "golden.json"
+    path.write_text(json.dumps([record]), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="invalid test case data"):
+        JsonDatasetRepository(path).load()
+
+
+def test_load_rejects_duplicate_case_ids(tmp_path) -> None:
+    """Duplicate identifiers make per-case regression tracking ambiguous."""
+    path = tmp_path / "golden.json"
+    path.write_text(
+        json.dumps([valid_case(), valid_case()]), encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="duplicate test case ids"):
+        JsonDatasetRepository(path).load()
+
+
 def test_load_rejects_missing_file(tmp_path) -> None:
     """The repository should report a missing dataset path."""
     with pytest.raises(FileNotFoundError, match="Golden dataset not found"):

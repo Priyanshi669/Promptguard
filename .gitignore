@@ -43,4 +43,5 @@ build/
 # Local data
 data/
 runs/
+reports/
 .test-tmp/

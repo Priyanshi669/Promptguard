@@ -4,13 +4,45 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --dev
-      - run: uv run pytest tests/unit
-      - run: uv run ruff check src/ tests/
+      - run: uv run pytest
+      - run: uv run ruff check .
       - run: uv run mypy src/
+
+  evaluate:
+    name: Evaluation with Quality Gates
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 20
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository)
+    env:
+      NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+      NVIDIA_MODEL: ${{ secrets.NVIDIA_MODEL }}
+      NVIDIA_BASE_URL: ${{ secrets.NVIDIA_BASE_URL }}
+      NVIDIA_REQUEST_TIMEOUT_SECONDS: "10"
+      EVALUATION_TIMEOUT_SECONDS: "900"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --dev
+      - name: Run evaluation with quality gates
+        run: |
+          uv run promptguard \
+            --prompt-version v1 \
+            --min-category-accuracy 0.8 \
+            --min-summary-score 3.5 \
+            --max-latency-ms 30000 \
+            --runs-dir runs

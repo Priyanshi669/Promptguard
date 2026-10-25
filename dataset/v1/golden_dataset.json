@@ -189,7 +189,9 @@
     "expected_category": "compromised_card",
     "ideal_summary": "The customer suspects unauthorized use of their card and asks what to do about unrecognized transactions.",
     "expected_difficulty": "medium",
-    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review.",
+    "critical": true,
+    "critical_rationale": "Unauthorized card use must route to compromised_card so the customer receives urgent fraud handling."
   },
   {
     "id": "banking77-025",
@@ -341,7 +343,9 @@
     "expected_category": "lost_or_stolen_card",
     "ideal_summary": "The customer's wallet with their card was stolen in Spain, and they request that the card be blocked and a new one ordered.",
     "expected_difficulty": "medium",
-    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review.",
+    "critical": true,
+    "critical_rationale": "A stolen card must route to lost_or_stolen_card so the customer can block it and request a replacement."
   },
   {
     "id": "banking77-044",
@@ -349,7 +353,9 @@
     "expected_category": "lost_or_stolen_phone",
     "ideal_summary": "The customer is without their phone and asks if they can still proceed normally without access to the app.",
     "expected_difficulty": "medium",
-    "notes": "Source: BANKING77. Ideal summary and difficulty require human review."
+    "notes": "Source: BANKING77. Ideal summary and difficulty require human review.",
+    "critical": true,
+    "critical_rationale": "A lost or stolen phone must route to lost_or_stolen_phone because account access and security guidance are at risk."
   },
   {
     "id": "banking77-045",

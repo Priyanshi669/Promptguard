@@ -17,9 +17,13 @@ from promptguard.infrastructure.persistence.repositories import (
 )
 
 
-def result(category_match: bool = True, category: str = "billing") -> EvaluationResult:
+def result(
+    category_match: bool = True,
+    category: str = "billing",
+    case_id: str = "case",
+) -> EvaluationResult:
     """Build a concise result fixture."""
-    return EvaluationResult(test_case_id="case", expected_category="billing", actual_category=category, expected_summary="expected", actual_summary="actual", category_match=category_match, summary_score=4.0, latency_ms=20, input_tokens=3, output_tokens=2)
+    return EvaluationResult(test_case_id=case_id, expected_category="billing", actual_category=category, expected_summary="expected", actual_summary="actual", category_match=category_match, summary_score=4.0, latency_ms=20, input_tokens=3, output_tokens=2)
 
 
 def report(results: list[EvaluationResult]):
@@ -42,8 +46,11 @@ def test_reporting_aggregates_and_handles_empty_results() -> None:
 
 def test_comparison_thresholds_and_drift() -> None:
     """Comparison, threshold violations, and category drift remain separate."""
-    baseline = report([result(), result()])
-    current = report([result(False, "technical"), result(False, "technical")])
+    baseline = report([result(case_id="case-1"), result(case_id="case-2")])
+    current = report([
+        result(False, "technical", case_id="case-1"),
+        result(False, "technical", case_id="case-2"),
+    ])
     comparison = ComparisonService().compare(baseline, current)
     decision = RegressionService().evaluate(current, RegressionThresholds(minimum_category_accuracy=0.5, minimum_summary_score=4.5), comparison)
     drift = DriftService().compare(baseline, current)
@@ -67,7 +74,9 @@ def test_json_repository_round_trip_and_errors(tmp_path: Path) -> None:
     assert repository.get_latest().run_id == saved.run_id  # type: ignore[union-attr]
     assert len(repository.list_runs()) == 1
     (tmp_path / "bad.json").write_text("not json", encoding="utf-8")
+    assert len(repository.list_runs()) == 1
+    assert repository.skipped_runs
     with pytest.raises(ValueError, match="Invalid evaluation run"):
-        repository.list_runs()
+        repository.get("bad")
     with pytest.raises(FileNotFoundError):
         repository.get("missing")

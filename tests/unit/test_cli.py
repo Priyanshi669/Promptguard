@@ -1,9 +1,12 @@
 """Unit tests for the command-line interface."""
 
-from unittest.mock import AsyncMock, patch
+import asyncio
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from promptguard.application.reporting_service import ReportingService
 from promptguard.domain.models import GoldenTestCase
 from promptguard.interfaces import cli
 
@@ -45,6 +48,51 @@ def test_run_reports_configuration_errors() -> None:
 
     assert excinfo.value.code == 2
 
+def test_run_reports_provider_errors_as_configuration_exit() -> None:
+    """Unhandled provider failures must not collide with a gate FAIL exit."""
+
+    def raise_provider_error(coro):
+        coro.close()
+        raise ConnectionError("provider unavailable")
+
+    with (
+        patch.object(
+            cli.asyncio,
+            "run",
+            side_effect=raise_provider_error,
+        ),
+        pytest.raises(SystemExit) as excinfo,
+    ):
+        cli.run()
+
+    assert excinfo.value.code == 2
+
+
+@pytest.mark.asyncio
+async def test_run_enforces_evaluation_deadline() -> None:
+    """A stuck evaluation must not outlive the configured run deadline."""
+    async def slow_run(**kwargs):
+        await asyncio.sleep(1)
+        raise AssertionError("deadline did not cancel the run")
+
+    settings = MagicMock()
+    settings.evaluation_timeout_seconds = 0.01
+    settings.nvidia_model = "test-model"
+    service = SimpleNamespace(run=slow_run)
+
+    with (
+        patch.object(
+            cli,
+            "_build_run_service",
+            return_value=(service, "system", [], {}),
+        ),
+        patch.object(cli, "_build_notifier", return_value=MagicMock()),
+        patch.object(cli, "get_settings", return_value=settings),
+        pytest.raises(RuntimeError, match="run timeout"),
+    ):
+        await cli._run(["--prompt-version", "v1"])
+
+
 def test_parse_args_defaults() -> None:
     """Defaults should keep the basic CLI path free of thresholds."""
     args = cli._parse_args([])
@@ -77,6 +125,30 @@ def test_parse_args_builds_thresholds() -> None:
     assert args.baseline == "latest"
 
 
+def test_parse_args_builds_drop_thresholds() -> None:
+    """Absolute and percentage drop flags should map onto the configuration."""
+    args = cli._parse_args(
+        [
+            "--max-category-accuracy-drop",
+            "0.05",
+            "--max-summary-score-drop",
+            "0.4",
+            "--max-category-accuracy-drop-pct",
+            "10",
+            "--max-summary-score-drop-pct",
+            "15",
+        ]
+    )
+
+    thresholds = cli._build_thresholds(args)
+
+    assert thresholds is not None
+    assert thresholds.maximum_category_accuracy_drop == 0.05
+    assert thresholds.maximum_summary_score_drop == 0.4
+    assert thresholds.maximum_category_accuracy_drop_pct == 10
+    assert thresholds.maximum_summary_score_drop_pct == 15
+
+
 def golden_case(case_id: str) -> GoldenTestCase:
     """Build a minimal golden case for limit tests."""
     return GoldenTestCase(
@@ -86,6 +158,12 @@ def golden_case(case_id: str) -> GoldenTestCase:
         ideal_summary="ideal",
         expected_difficulty="easy",
     )
+
+
+def test_exit_code_without_regression_is_inconclusive() -> None:
+    """A completed report without a gate decision must exit 2."""
+    report = ReportingService().build_report([], "v1", "m", "d")
+    assert cli._exit_code_for(report) == 2
 
 
 def test_apply_limit_slices_first_n_cases() -> None:
@@ -101,12 +179,9 @@ def test_apply_limit_without_limit_keeps_all_cases() -> None:
     assert cli._apply_limit(cases, None) == cases
 
 
-def test_apply_limit_rejects_negative_values() -> None:
-    """A negative limit is a configuration error."""
-    with pytest.raises(ValueError, match="non-negative"):
+def test_apply_limit_rejects_non_positive_values() -> None:
+    """Zero and negative limits are configuration errors."""
+    with pytest.raises(ValueError, match="at least 1"):
+        cli._apply_limit([golden_case("case-0")], 0)
+    with pytest.raises(ValueError, match="at least 1"):
         cli._apply_limit([golden_case("case-0")], -1)
-
-
-def test_apply_limit_supports_empty_smoke_runs() -> None:
-    """A zero limit should produce an explicitly empty run."""
-    assert cli._apply_limit([golden_case("case-0")], 0) == []

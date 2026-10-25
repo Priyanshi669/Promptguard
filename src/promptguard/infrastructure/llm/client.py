@@ -3,19 +3,20 @@
 import json
 import re
 import time
+from typing import Any
 
 from openai import AsyncOpenAI
 from pydantic import ValidationError
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
+from tenacity import retry, retry_if_exception_type, stop_after_attempt
 
 from promptguard.config import get_settings
 from promptguard.domain.models import LLMOutput, LLMResponse
 from promptguard.infrastructure.llm.contract import LLMClient
+from promptguard.infrastructure.llm.retry import (
+    LLM_RETRY_ATTEMPTS,
+    LLM_RETRY_WAIT,
+    RETRYABLE_EXCEPTIONS,
+)
 
 
 class NVIDIAClient(LLMClient):
@@ -31,15 +32,17 @@ class NVIDIAClient(LLMClient):
         self._client = client or AsyncOpenAI(
             api_key=settings.nvidia_api_key,
             base_url=settings.nvidia_base_url,
+            timeout=settings.nvidia_request_timeout_seconds,
+            max_retries=0,
         )
         self._model = settings.nvidia_model
+        self._temperature = getattr(settings, "nvidia_temperature", None)
+        self._seed = getattr(settings, "nvidia_seed", None)
 
     @retry(
-        retry=retry_if_exception_type(
-            (TimeoutError, ConnectionError, ValueError),
-        ),
-        wait=wait_exponential(multiplier=1, min=1, max=8),
-        stop=stop_after_attempt(3),
+        retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
+        wait=LLM_RETRY_WAIT,
+        stop=stop_after_attempt(LLM_RETRY_ATTEMPTS),
         reraise=True,
     )
     async def _call_llm(
@@ -47,10 +50,14 @@ class NVIDIAClient(LLMClient):
         system_prompt: str,
         user_input: str,
     ) -> tuple[LLMOutput, int, int]:
-        """Call the NVIDIA API and parse a structured output with retries."""
-        response = await self._client.chat.completions.create(
-            model=self._model,
-            messages=[
+        """Call the API, retrying only transient transport/provider failures.
+
+        Invalid or empty model outputs are deterministic and surface directly
+        as ``ValueError`` without another provider call.
+        """
+        request: dict[str, Any] = {
+            "model": self._model,
+            "messages": [
                 {
                     "role": "system",
                     "content": system_prompt,
@@ -60,8 +67,14 @@ class NVIDIAClient(LLMClient):
                     "content": user_input,
                 },
             ],
-            response_format={"type": "json_object"},
-        )
+            "response_format": {"type": "json_object"},
+        }
+        if self._temperature is not None:
+            request["temperature"] = self._temperature
+        if self._seed is not None:
+            request["seed"] = self._seed
+
+        response = await self._client.chat.completions.create(**request)
 
         content = response.choices[0].message.content
 

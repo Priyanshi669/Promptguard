@@ -13,6 +13,12 @@ class RegressionThresholds(BaseModel):
     maximum_average_latency_ms: float | None = Field(default=None, ge=0)
     maximum_category_accuracy_drop: float | None = Field(default=None, ge=0, le=1)
     maximum_summary_score_drop: float | None = Field(default=None, ge=0, le=4)
+    maximum_category_accuracy_drop_pct: float | None = Field(
+        default=None, ge=0, le=100,
+    )
+    maximum_summary_score_drop_pct: float | None = Field(
+        default=None, ge=0, le=100,
+    )
 
 
 class ThresholdViolation(BaseModel):

@@ -18,6 +18,14 @@ class Settings(BaseSettings):
 
     nvidia_model: str = Field(..., min_length=1)
 
+    nvidia_request_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
+
+    evaluation_timeout_seconds: float = Field(default=900.0, gt=0, le=1800)
+
+    nvidia_temperature: float | None = Field(default=None, ge=0, le=2)
+
+    nvidia_seed: int | None = Field(default=None, ge=0)
+
     slack_webhook_url: str | None = Field(default=None)
 
     model_config = SettingsConfigDict(

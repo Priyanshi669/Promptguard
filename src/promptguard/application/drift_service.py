@@ -30,8 +30,17 @@ class DriftService:
 
     @staticmethod
     def _distribution(report: EvaluationReport) -> dict[str, float]:
+        """Compute category distribution using normalized categories.
+
+        Uses normalized_category which applies case/whitespace folding and
+        alias mapping. Unknown categories are preserved as-is (never silently
+        remapped) and will appear in the distribution under their raw label.
+        """
         total = len(report.results)
         counts: dict[str, int] = {}
         for result in report.results:
-            counts[result.actual_category] = counts.get(result.actual_category, 0) + 1
+            # Use normalized_category for consistent drift measurement
+            # Falls back to actual_category if normalized is empty (handled by model_validator)
+            category = result.normalized_category or result.actual_category
+            counts[category] = counts.get(category, 0) + 1
         return {category: count / total for category, count in counts.items()}

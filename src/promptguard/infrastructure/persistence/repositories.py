@@ -12,6 +12,12 @@ class JsonEvaluationRunRepository(EvaluationRunRepository):
 
     def __init__(self, directory: Path) -> None:
         self._directory = directory
+        self._skipped_runs: list[str] = []
+
+    @property
+    def skipped_runs(self) -> list[str]:
+        """Return diagnostics for files skipped by the last list operation."""
+        return list(self._skipped_runs)
 
     def save(self, report: EvaluationReport) -> None:
         self._directory.mkdir(parents=True, exist_ok=True)
@@ -33,9 +39,15 @@ class JsonEvaluationRunRepository(EvaluationRunRepository):
         return reports[-1] if reports else None
 
     def list_runs(self) -> list[EvaluationReport]:
+        self._skipped_runs = []
         if not self._directory.exists():
             return []
-        reports = [self.get(path.stem) for path in self._directory.glob("*.json")]
+        reports: list[EvaluationReport] = []
+        for path in self._directory.glob("*.json"):
+            try:
+                reports.append(self.get(path.stem))
+            except (OSError, ValueError) as exc:
+                self._skipped_runs.append(f"{path.name}: {exc}")
         return sorted(reports, key=lambda report: (report.timestamp, report.run_id))
 
     def _path(self, run_id: str) -> Path:

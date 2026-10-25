@@ -1,5 +1,7 @@
 """DeepEval-based evaluation metrics."""
 
+import math
+
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, SingleTurnParams
 
@@ -50,6 +52,17 @@ class DeepEvalSummaryMetric(SummaryMetric):
 
     @staticmethod
     def _normalize_score(score: float) -> float:
-        """Convert DeepEval's 0-1 score to the project's 1-5 scale."""
-        bounded_score = max(0.0, min(1.0, score))
-        return 1.0 + (4.0 * bounded_score)
+        """Convert DeepEval's 0-1 score to the project's 1-5 scale.
+
+        Invalid judge evidence is rejected instead of being clamped into a
+        passing score.
+        """
+        if (
+            not isinstance(score, (int, float))
+            or not math.isfinite(score)
+            or not 0 <= score <= 1
+        ):
+            raise ValueError(
+                "DeepEval score must be a finite number between 0 and 1."
+            )
+        return 1.0 + (4.0 * float(score))

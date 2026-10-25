@@ -1,7 +1,10 @@
 """Facts and decisions produced by evaluation comparison."""
 
+from typing import Literal
+
 from pydantic import BaseModel
 
+from promptguard.domain.enums import QualityGateStatus
 from promptguard.domain.thresholds import ThresholdViolation
 
 
@@ -35,8 +38,30 @@ class EvaluationComparison(BaseModel):
         )
 
 
+class CaseRegressionStatus(BaseModel):
+    """Per-case regression status for individual test cases."""
+
+    test_case_id: str
+    baseline_category_match: bool | None = None
+    current_category_match: bool | None = None
+    status: Literal["new_failure", "resolved_failure", "unchanged_failure", "unchanged_pass", "unknown"]
+
+    @property
+    def is_regression(self) -> bool:
+        """Return True if this case represents a regression (new failure or unresolved failure)."""
+        return self.status in ("new_failure", "unchanged_failure")
+
+
 class RegressionResult(BaseModel):
     """Threshold decision and all violations for an evaluation run."""
 
-    passed: bool
+    status: QualityGateStatus = "INCONCLUSIVE"
     violations: list[ThresholdViolation] = []
+    case_regressions: list[CaseRegressionStatus] = []
+    critical_case_failure: bool = False
+    incompatibility_reasons: list[str] = []
+
+    @property
+    def passed(self) -> bool:
+        """Backward compatibility: True only if status is PASS."""
+        return self.status == "PASS"

@@ -1,24 +1,50 @@
-from datetime import datetime
-from typing import Literal
+import math
+from datetime import UTC, datetime
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 from promptguard.domain.drift import CategoryDriftResult
-from promptguard.domain.regression import RegressionResult
+from promptguard.domain.regression import EvaluationComparison, RegressionResult
+from promptguard.domain.thresholds import RegressionThresholds
 
 Difficulty = Literal["easy", "medium", "hard"]
+NonEmptyStr = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1),
+]
 
 
 class GoldenTestCase(BaseModel):
-    id: str
-    input: str
+    id: NonEmptyStr
+    input: NonEmptyStr
 
-    expected_category: str
-    ideal_summary: str
+    expected_category: NonEmptyStr
+    ideal_summary: NonEmptyStr
 
     expected_difficulty: Difficulty
 
     notes: str | None = None
+
+    critical: bool = False
+    critical_rationale: str | None = None
+
+    @model_validator(mode="after")
+    def _require_critical_rationale(self) -> "GoldenTestCase":
+        """Require a documented reason for every critical case."""
+        if self.critical and not (
+            self.critical_rationale and self.critical_rationale.strip()
+        ):
+            raise ValueError(
+                "critical test cases require a non-empty critical_rationale"
+            )
+        return self
 
 
 class LLMOutput(BaseModel):
@@ -29,15 +55,9 @@ class LLMOutput(BaseModel):
     for generating.
     """
 
-    category: str = Field(
-        min_length=1,
-        description="The category assigned to the customer message.",
-    )
+    category: NonEmptyStr
 
-    summary: str = Field(
-        min_length=1,
-        description="A concise summary of the customer message.",
-    )
+    summary: NonEmptyStr
 
 
 class LLMResponse(BaseModel):
@@ -58,16 +78,16 @@ class LLMResponse(BaseModel):
 
 
 class EvaluationResult(BaseModel):
-    test_case_id: str
+    test_case_id: NonEmptyStr
 
-    expected_category: str
-    actual_category: str
+    expected_category: NonEmptyStr
+    actual_category: NonEmptyStr
 
     normalized_category: str = ""
     normalization_applied: bool = False
 
-    expected_summary: str
-    actual_summary: str
+    expected_summary: NonEmptyStr
+    actual_summary: NonEmptyStr
 
     category_match: bool
 
@@ -81,11 +101,34 @@ class EvaluationResult(BaseModel):
     input_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
 
+    critical: bool = False
+
+    def metric_issues(self) -> list[str]:
+        """Return violations of finite and range metric invariants."""
+        issues: list[str] = []
+        if not math.isfinite(self.summary_score):
+            issues.append("summary_score must be finite")
+        elif not 1 <= self.summary_score <= 5:
+            issues.append("summary_score must be between 1 and 5")
+        if not math.isfinite(self.latency_ms):
+            issues.append("latency_ms must be finite")
+        elif self.latency_ms < 0:
+            issues.append("latency_ms must be non-negative")
+        return issues
+
     @model_validator(mode="after")
     def _default_normalized_category(self) -> "EvaluationResult":
         """Backfill normalized_category from actual_category when unset."""
         if not self.normalized_category:
             self.normalized_category = self.actual_category
+        return self
+
+    @model_validator(mode="after")
+    def _validate_metric_invariants(self) -> "EvaluationResult":
+        """Reject missing or non-finite result metrics at the domain boundary."""
+        issues = self.metric_issues()
+        if issues:
+            raise ValueError("; ".join(issues))
         return self
 
 
@@ -104,6 +147,163 @@ class EvaluationReport(BaseModel):
     total_input_tokens: int = Field(ge=0)
     total_output_tokens: int = Field(ge=0)
     results: list[EvaluationResult]
+    eval_config_hash: str | None = None
+    thresholds: RegressionThresholds | None = None
     baseline_run_id: str | None = None
+    comparison: EvaluationComparison | None = None
     regression: RegressionResult | None = None
     drift: CategoryDriftResult | None = None
+
+    @field_validator("timestamp")
+    @classmethod
+    def _normalize_timestamp(cls, value: datetime) -> datetime:
+        """Require an explicit timezone and normalize it to UTC."""
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("timestamp must include timezone information")
+        return value.astimezone(UTC)
+
+    def aggregate_issues(self) -> list[str]:
+        """Return violations of count, finite-metric, and aggregate invariants."""
+        issues: list[str] = []
+        result_issues: list[str] = []
+        for index, result in enumerate(self.results):
+            for issue in result.metric_issues():
+                result_issues.append(
+                    f"Result {index} ({result.test_case_id}): {issue}."
+                )
+        issues.extend(result_issues)
+
+        aggregate_metric_issues: list[str] = []
+        if not math.isfinite(self.category_accuracy):
+            aggregate_metric_issues.append("category_accuracy must be finite.")
+        elif not 0 <= self.category_accuracy <= 1:
+            aggregate_metric_issues.append(
+                "category_accuracy must be between 0 and 1."
+            )
+        if not math.isfinite(self.average_summary_score):
+            aggregate_metric_issues.append(
+                "average_summary_score must be finite."
+            )
+        elif not 0 <= self.average_summary_score <= 5:
+            aggregate_metric_issues.append(
+                "average_summary_score must be between 0 and 5."
+            )
+        if not math.isfinite(self.average_latency_ms):
+            aggregate_metric_issues.append(
+                "average_latency_ms must be finite."
+            )
+        elif self.average_latency_ms < 0:
+            aggregate_metric_issues.append(
+                "average_latency_ms must be non-negative."
+            )
+        issues.extend(aggregate_metric_issues)
+
+        if self.case_count != len(self.results):
+            issues.append(
+                f"Current run case_count ({self.case_count}) does not match "
+                f"the number of results ({len(self.results)})."
+            )
+            return issues
+
+        if result_issues or aggregate_metric_issues:
+            return issues
+
+        if self.case_count:
+            expected_accuracy = (
+                sum(result.category_match for result in self.results)
+                / self.case_count
+            )
+            expected_summary_score = (
+                sum(result.summary_score for result in self.results)
+                / self.case_count
+            )
+            expected_latency = (
+                sum(result.latency_ms for result in self.results)
+                / self.case_count
+            )
+        else:
+            expected_accuracy = 0.0
+            expected_summary_score = 0.0
+            expected_latency = 0.0
+
+        expected_input_tokens = sum(
+            result.input_tokens for result in self.results
+        )
+        expected_output_tokens = sum(
+            result.output_tokens for result in self.results
+        )
+
+        if not math.isclose(
+            self.category_accuracy, expected_accuracy,
+            rel_tol=1e-9, abs_tol=1e-9,
+        ):
+            issues.append(
+                "Current run category_accuracy is inconsistent with its "
+                "case results."
+            )
+        if not math.isclose(
+            self.average_summary_score, expected_summary_score,
+            rel_tol=1e-9, abs_tol=1e-9,
+        ):
+            issues.append(
+                "Current run average_summary_score is inconsistent with its "
+                "case results."
+            )
+        if not math.isclose(
+            self.average_latency_ms, expected_latency,
+            rel_tol=1e-9, abs_tol=1e-9,
+        ):
+            issues.append(
+                "Current run average_latency_ms is inconsistent with its "
+                "case results."
+            )
+        if self.total_input_tokens != expected_input_tokens:
+            issues.append(
+                "Current run total_input_tokens is inconsistent with its "
+                "case results."
+            )
+        if self.total_output_tokens != expected_output_tokens:
+            issues.append(
+                "Current run total_output_tokens is inconsistent with its "
+                "case results."
+            )
+        return issues
+
+    def evidence_issues(self) -> list[str]:
+        """Return all evidence problems that prevent a trustworthy gate."""
+        issues = self.aggregate_issues()
+        if not self.results:
+            issues.insert(
+                0,
+                "Current run has no evaluated cases; refusing to evaluate "
+                "quality gates.",
+            )
+        case_ids = [result.test_case_id for result in self.results]
+        if any(not case_id.strip() for case_id in case_ids):
+            issues.append("Current run contains blank test case ids.")
+        if len(case_ids) != len(set(case_ids)):
+            issues.append("Current run contains duplicate test case ids.")
+        return issues
+
+    @model_validator(mode="after")
+    def _validate_aggregates(self) -> "EvaluationReport":
+        """Reject internally inconsistent reports at the domain boundary."""
+        issues = self.aggregate_issues()
+        if issues:
+            raise ValueError("; ".join(issues))
+        return self
+
+    @model_validator(mode="after")
+    def _validate_comparison_identifiers(self) -> "EvaluationReport":
+        """Keep persisted comparison identifiers aligned with the report."""
+        if self.comparison is None:
+            return self
+        if self.comparison.current_run_id != self.run_id:
+            raise ValueError(
+                "comparison current_run_id must match report run_id"
+            )
+        if self.baseline_run_id != self.comparison.baseline_run_id:
+            raise ValueError(
+                "comparison baseline_run_id must match report baseline_run_id"
+            )
+        return self
