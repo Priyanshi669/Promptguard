@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "recorded_failures": {
+    "banking77-test-0959": {
+      "run_id": "9921a945-8359-4003-8c39-cdd2636dcb28",
+      "error_type": "ValueError",
+      "error_message": "LLM returned invalid structured output: '{\"category\":{\"value\":\"getting_virtual_card\",\"confidence\":0.99,\"all_categories\":[{\"name\":\"getting_virtual_card\",\"confidence\":0.99},{\"name\":\"get_disposable_virtual_card\",\"confidence\":0.01},{\"name\":\"getting_spare_card\",\"confidence\":0.0}] }'"
+    }
+  }
+}

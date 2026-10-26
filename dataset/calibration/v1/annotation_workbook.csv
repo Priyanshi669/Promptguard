@@ -100,7 +100,7 @@ banking77-test-2619,primary,false,test,get_disposable_virtual_card,get_disposabl
 banking77-test-2401,primary,false,test,getting_spare_card,getting_spare_card,not_applicable,Would it be possible to get another card?,,,,,,,
 banking77-test-2438,primary,false,test,getting_spare_card,getting_spare_card,not_applicable,My daughter needs a card. Can I give her one of mine that's linked to my account?,,,,,,,
 banking77-test-0951,primary,false,test,getting_virtual_card,getting_virtual_card,not_applicable,Please help me get a virtual card.,,,,,,,
-banking77-test-0959,primary,false,test,getting_virtual_card,getting_virtual_card,not_applicable,Is there a way to obtain a virtual card?,,,,,,,
+banking77-test-0925,primary,false,test,getting_virtual_card,getting_virtual_card,not_applicable,If I don't want a physical card can i get a virtual version?,,,,,,,
 banking77-test-0452,primary,false,test,lost_or_stolen_card,lost_or_stolen_card,not_applicable,How do I report my card stolen?,,,,,,,
 banking77-test-0448,primary,false,test,lost_or_stolen_card,lost_or_stolen_card,not_applicable,"I believe my card has been stolen, what can I do about this situation? It's urgent.",,,,,,,
 banking77-test-1660,primary,false,test,lost_or_stolen_phone,lost_or_stolen_phone,not_applicable,"lost phone, can i still access account?",,,,,,,

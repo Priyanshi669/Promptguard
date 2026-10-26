@@ -1,7 +1,7 @@
 {
   "manifest_path": "dataset/calibration/v1/sample_manifest.json",
-  "manifest_sha256": "3f541d284f6e3329b080d030eeca148afcedecbe17b0edb35903cb9d75d41382",
-  "validated_at": "2026-10-26T09:31:16.008384+00:00",
+  "manifest_sha256": "fda25cc4ba55420dae405edbbac4b5c46e11db6abb05da203fc5ee96d7b166cd",
+  "validated_at": "2026-10-26T09:53:12.743294+00:00",
   "status": "approved",
   "checks": {
     "total_examples_100": true,

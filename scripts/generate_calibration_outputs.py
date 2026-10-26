@@ -12,6 +12,7 @@ downstream human annotation and judge calibration.
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import json
 import sys
@@ -101,12 +102,15 @@ async def generate_outputs(
     manifest: dict[str, Any],
     system_prompt: str,
     prompt_version: str,
+    case_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
-    """Generate candidate summaries for every manifest case.
+    """Generate candidate summaries for manifest cases.
 
     Each record preserves the manifest ID, source input, raw model output,
     and execution metadata. Failed cases are recorded with a status and
-    error message rather than being silently dropped.
+    error message rather than being silently dropped. When ``case_ids`` is
+    provided, only those manifest cases are generated; the caller merges
+    them into an existing output file.
     """
     settings = config.get_settings()
     client = NVIDIAClient()
@@ -117,6 +121,8 @@ async def generate_outputs(
     records: list[dict[str, Any]] = []
     for example in manifest["examples"]:
         case_id = str(example["id"])
+        if case_ids is not None and case_id not in case_ids:
+            continue
         source_input = str(example["source_input"])
 
         record: dict[str, Any] = {
@@ -191,12 +197,41 @@ def validate_outputs(records: list[dict[str, Any]], manifest: dict[str, Any]) ->
         )
 
 
+def load_existing_outputs(path: Path) -> dict[str, dict[str, Any]]:
+    """Load prior candidate outputs keyed by case ID, if present."""
+    if not path.exists():
+        return {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    records = payload.get("records")
+    if not isinstance(records, list):
+        raise TypeError(f"Output file '{path}' has no records list.")
+    return {str(record["id"]): record for record in records}
+
+
+def merge_outputs(
+    existing: dict[str, dict[str, Any]],
+    fresh: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Merge fresh records over prior ones, replacing by case ID."""
+    merged = dict(existing)
+    for record in fresh:
+        merged[str(record["id"])] = record
+    return list(merged.values())
+
+
 def write_outputs(records: list[dict[str, Any]], path: Path) -> None:
     """Write candidate outputs as JSON with provenance metadata."""
+    run_ids = sorted(
+        {str(r["run_id"]) for r in records if r.get("run_id")}
+    )
+    latest = max(
+        (str(r["generated_at"]) for r in records if r.get("generated_at")),
+        default=None,
+    )
     payload = {
         "version": "v1",
-        "run_id": records[0]["run_id"] if records else None,
-        "generated_at": records[0]["generated_at"] if records else None,
+        "run_id": run_ids[0] if len(run_ids) == 1 else run_ids,
+        "generated_at": latest,
         "model": records[0]["model"] if records else None,
         "total_cases": len(records),
         "successful_cases": sum(1 for r in records if r["status"] == "success"),
@@ -210,8 +245,82 @@ def write_outputs(records: list[dict[str, Any]], path: Path) -> None:
     )
 
 
+def parse_case_ids(raw_ids: list[str] | None) -> set[str] | None:
+    """Return the explicit generate-ids set, or None for a full run."""
+    if not raw_ids:
+        return None
+    return set(raw_ids)
+
+
+FAILURES_PATH = CALIBRATION_DIR / "generation_failures.json"
+
+
+def record_generation_failures(
+    fresh_records: list[dict[str, Any]],
+    case_ids: set[str] | None,
+) -> None:
+    """Keep a persistent log of failed-generation case ids.
+
+    The manifest generator consumes this log so a failed case stays
+    ineligible deterministically, even after its record leaves the main
+    output file. Cases resolved in a later run are removed from the log.
+    """
+    log: dict[str, dict[str, Any]] = {}
+    if FAILURES_PATH.exists():
+        payload = json.loads(FAILURES_PATH.read_text(encoding="utf-8"))
+        entries = payload.get("recorded_failures")
+        if isinstance(entries, dict):
+            log = entries
+
+    if case_ids is None:
+        entries = log
+    else:
+        entries = {
+            case_id: entry
+            for case_id, entry in log.items()
+            if case_id not in case_ids or entry is not None
+        }
+        for case_id in case_ids:
+            entries.pop(case_id, None)
+
+    for record in fresh_records:
+        case_id = str(record["id"])
+        if record.get("status") == "failure":
+            entries[case_id] = {
+                "run_id": record.get("run_id"),
+                "error_type": record.get("error_type"),
+                "error_message": record.get("error_message"),
+            }
+        else:
+            entries.pop(case_id, None)
+
+    FAILURES_PATH.write_text(
+        json.dumps(
+            {
+                "version": "v1",
+                "recorded_failures": entries,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 async def main() -> None:
     """Run the calibration-output generation pipeline."""
+    parser = argparse.ArgumentParser(
+        description="Generate calibration candidate summaries.",
+    )
+    parser.add_argument(
+        "--ids",
+        nargs="*",
+        help="Generate only these manifest case IDs and merge into the "
+        "existing output file.",
+    )
+    args = parser.parse_args()
+
     manifest = load_manifest(MANIFEST_PATH)
     try:
         ensure_manifest_approved(manifest)
@@ -223,16 +332,44 @@ async def main() -> None:
     prompt_config = load_prompt(prompt_version)
     system_prompt = extract_system_prompt(prompt_config)
 
-    records = await generate_outputs(
+    case_ids = parse_case_ids(args.ids)
+    if case_ids is not None:
+        manifest_ids = {str(e["id"]) for e in manifest["examples"]}
+        unknown = sorted(case_ids - manifest_ids)
+        if unknown:
+            print(f"IDs not in the manifest: {unknown}")
+            sys.exit(1)
+
+    fresh_records = await generate_outputs(
         manifest,
         system_prompt,
         prompt_version,
+        case_ids=case_ids,
     )
+    record_generation_failures(fresh_records, case_ids)
+
+    if case_ids is None:
+        records = fresh_records
+    else:
+        manifest_ids = {str(e["id"]) for e in manifest["examples"]}
+        prior = load_existing_outputs(OUTPUT_PATH)
+        stale = sorted(set(prior) - manifest_ids)
+        for record_id in stale:
+            print(
+                f"Record {record_id} is no longer in the manifest and is "
+                "dropped from the output file (failure reason remains in "
+                "version history)."
+            )
+        merged = merge_outputs(prior, fresh_records)
+        records = [
+            record for record in merged if str(record["id"]) in manifest_ids
+        ]
     write_outputs(records, OUTPUT_PATH)
 
     successful = sum(1 for r in records if r.get("status") == "success")
     failed = sum(1 for r in records if r.get("status") == "failure")
-    print(f"Generated {successful} successful, {failed} failed case outputs.")
+    print(f"Generated {len(fresh_records)} new records this run.")
+    print(f"Output now has {successful} successful, {failed} failed cases.")
     print(f"Output written to {OUTPUT_PATH}")
 
     try:

@@ -2,7 +2,7 @@
   "version": "v1",
   "seed": "20261026",
   "selection": "first 20 ids ranked by sha256(seed + NUL + 'audit' + NUL + id)",
-  "manifest_sha256": "3f541d284f6e3329b080d030eeca148afcedecbe17b0edb35903cb9d75d41382",
+  "manifest_sha256": "fda25cc4ba55420dae405edbbac4b5c46e11db6abb05da203fc5ee96d7b166cd",
   "count": 20,
   "ids": [
     "banking77-test-2971",

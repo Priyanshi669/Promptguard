@@ -100,6 +100,33 @@ def load_golden_inputs(path: Path) -> set[str]:
     return inputs
 
 
+def load_candidate_generation_failures(
+    output_path: Path,
+) -> set[str]:
+    """Return case ids whose candidate generation previously failed."""
+    failure_ids: set[str] = set()
+
+    failures_log = Path("dataset/calibration/v1/generation_failures.json")
+    if failures_log.exists():
+        payload = json.loads(failures_log.read_text(encoding="utf-8"))
+        recorded = payload.get("recorded_failures")
+        if isinstance(recorded, dict):
+            failure_ids |= set(recorded)
+
+    if not output_path.exists():
+        return failure_ids
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    records = payload.get("records")
+    if not isinstance(records, list):
+        return failure_ids
+    failure_ids |= {
+        str(record["id"])
+        for record in records
+        if record.get("status") == "failure"
+    }
+    return failure_ids
+
+
 def load_card_pin_review(
     path: Path,
 ) -> tuple[set[str], set[str]]:
@@ -188,7 +215,6 @@ def build_manifest(
                 example
                 for example in candidates
                 if "pin" in example["normalized_input"]
-                and example["source_id"] not in excluded_ids
             ]
 
         if not candidates:
@@ -201,6 +227,7 @@ def build_manifest(
             example
             for example in candidates
             if example["normalized_input"] not in golden_inputs
+            and example["source_id"] not in excluded_ids
         ]
 
         unique_candidates: dict[str, dict[str, str]] = {}
@@ -434,6 +461,9 @@ def main() -> None:
     source_examples = load_source_examples(args.source)
     golden_inputs = load_golden_inputs(args.golden)
     excluded_ids, included_ids = load_card_pin_review(REVIEW_PATH)
+    excluded_ids |= load_candidate_generation_failures(
+        Path("dataset/calibration/v1/candidate_outputs.json")
+    )
     selected = build_manifest(
         source_examples,
         categories,

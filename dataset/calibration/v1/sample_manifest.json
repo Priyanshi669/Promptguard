@@ -764,12 +764,12 @@
       "length_band": "short"
     },
     {
-      "id": "banking77-test-0959",
+      "id": "banking77-test-0925",
       "source_split": "test",
       "category": "getting_virtual_card",
       "source_category": "getting_virtual_card",
-      "source_input": "Is there a way to obtain a virtual card?",
-      "word_count": 9,
+      "source_input": "If I don't want a physical card can i get a virtual version?",
+      "word_count": 13,
       "length_band": "long"
     },
     {

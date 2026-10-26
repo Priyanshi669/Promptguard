@@ -1,7 +1,7 @@
 {
   "version": "v1",
   "status": "approved",
-  "manifest_sha256": "3f541d284f6e3329b080d030eeca148afcedecbe17b0edb35903cb9d75d41382",
+  "manifest_sha256": "fda25cc4ba55420dae405edbbac4b5c46e11db6abb05da203fc5ee96d7b166cd",
   "rubric_version": "v1",
   "rubric_sha256": "7ef7ca7fdfc4703c97ea933f9c5aa7a6afb0d658f647ce2e4ed2aaac2637b1d5",
   "total_examples": 100,
@@ -756,11 +756,11 @@
       "inclusion_status": "not_applicable"
     },
     {
-      "id": "banking77-test-0959",
+      "id": "banking77-test-0925",
       "source_split": "test",
       "category": "getting_virtual_card",
       "source_category": "getting_virtual_card",
-      "source_input": "Is there a way to obtain a virtual card?",
+      "source_input": "If I don't want a physical card can i get a virtual version?",
       "audit": false,
       "inclusion_status": "not_applicable"
     },
