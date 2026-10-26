@@ -71,3 +71,64 @@ async def test_score_uses_deepeval_measurement() -> None:
     assert score == 4.0
     assert geval.call_args.kwargs["criteria"] == SUMMARY_QUALITY_CRITERIA
     metric.a_measure.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_score_retries_malformed_judge_response_then_succeeds() -> None:
+    """A judge response missing 'score' is redone, not clamped to a default."""
+    metric = MagicMock()
+    metric.score = 0.5
+
+    calls = []
+
+    async def flaky_measure(test_case) -> None:
+        calls.append(len(calls))
+        if len(calls) < 2:
+            raise KeyError("score")
+
+    metric.a_measure = AsyncMock(side_effect=flaky_measure)
+
+    with (
+        patch(
+            "promptguard.infrastructure.evaluation.deepeval_metrics.NVIDIAJudge",
+            return_value=MagicMock(),
+        ),
+        patch(
+            "promptguard.infrastructure.evaluation.deepeval_metrics.GEval",
+            return_value=metric,
+        ),
+    ):
+        summary_metric = DeepEvalSummaryMetric()
+
+    score = await summary_metric.score("Expected summary", "Actual summary")
+
+    assert score == 3.0
+    assert metric.a_measure.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_score_exhausts_judge_retries_and_raises() -> None:
+    """Persistent judge malformed responses surface instead of being faked."""
+    metric = MagicMock()
+
+    async def always_bad_measure(test_case) -> None:
+        raise KeyError("reason")
+
+    metric.a_measure = AsyncMock(side_effect=always_bad_measure)
+
+    with (
+        patch(
+            "promptguard.infrastructure.evaluation.deepeval_metrics.NVIDIAJudge",
+            return_value=MagicMock(),
+        ),
+        patch(
+            "promptguard.infrastructure.evaluation.deepeval_metrics.GEval",
+            return_value=metric,
+        ),
+    ):
+        summary_metric = DeepEvalSummaryMetric()
+
+    with pytest.raises(KeyError):
+        await summary_metric.score("Expected summary", "Actual summary")
+
+    assert metric.a_measure.await_count == 3

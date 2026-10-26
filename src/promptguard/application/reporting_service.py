@@ -3,7 +3,10 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from promptguard.domain.models import EvaluationReport, EvaluationResult
+from promptguard.domain.models import (
+    EvaluationReport,
+    EvaluationResult,
+)
 from promptguard.domain.thresholds import RegressionThresholds
 
 
@@ -50,5 +53,17 @@ class ReportingService:
             ),
             total_input_tokens=sum(result.input_tokens for result in results),
             total_output_tokens=sum(result.output_tokens for result in results),
+            total_cost_usd=self._aggregate_cost_usd(results),
             results=results,
         )
+
+    @staticmethod
+    def _aggregate_cost_usd(
+        results: list[EvaluationResult],
+    ) -> float | None:
+        """Sum provider-reported costs, or None when any case lacks one."""
+        if not results or any(
+            result.cost_usd is None for result in results
+        ):
+            return None
+        return sum(result.cost_usd or 0.0 for result in results)

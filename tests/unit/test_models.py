@@ -444,3 +444,77 @@ def test_result_rejects_nan_summary_score() -> None:
             input_tokens=1,
             output_tokens=1,
         )
+
+
+def test_result_rejects_negative_or_infinite_cost() -> None:
+    """Provider costs, when present, must be finite and non-negative."""
+    base = {
+        "test_case_id": "TC-001",
+        "expected_category": "billing",
+        "actual_category": "billing",
+        "expected_summary": "expected",
+        "actual_summary": "actual",
+        "category_match": True,
+        "summary_score": 4.0,
+        "latency_ms": 1.0,
+        "input_tokens": 1,
+        "output_tokens": 1,
+    }
+    with pytest.raises(ValidationError):
+        EvaluationResult(**base, cost_usd=-0.01)
+    with pytest.raises(ValidationError):
+        EvaluationResult(**base, cost_usd=math.inf)
+
+
+def test_report_defaults_schema_version_and_cost_to_absent() -> None:
+    """New runs carry an explicit schema version and absent cost by default."""
+    report = build_report()
+    assert report.schema_version == 1
+    assert report.total_cost_usd is None
+    assert report.results[0].cost_usd is None
+
+
+def test_old_report_payload_loads_with_default_schema_version() -> None:
+    """Reports persisted before schema_version remain loadable."""
+    payload = build_report().model_dump()
+    payload.pop("schema_version", None)
+    payload.pop("total_cost_usd", None)
+    payload["results"][0].pop("cost_usd", None)
+    loaded = EvaluationReport.model_validate(payload)
+    assert loaded.schema_version == 1
+    assert loaded.total_cost_usd is None
+
+
+def test_report_aggregates_provider_reported_cost() -> None:
+    """Cost is summed only when every case carries a provider cost."""
+    results = []
+    for index in range(2):
+        results.append(
+            EvaluationResult(
+                test_case_id=f"TC-{index}",
+                expected_category="billing",
+                actual_category="billing",
+                expected_summary="expected",
+                actual_summary="actual",
+                category_match=True,
+                summary_score=4.0,
+                latency_ms=1.0,
+                input_tokens=1,
+                output_tokens=1,
+                cost_usd=0.01 + index / 1000,
+            )
+        )
+    report = ReportingService().build_report(results, "v1", "m", "d")
+    assert report.total_cost_usd == pytest.approx(0.021)
+
+    results[0].cost_usd = None
+    report = ReportingService().build_report(results, "v1", "m", "d")
+    assert report.total_cost_usd is None
+
+
+def test_report_rejects_inconsistent_cost_total() -> None:
+    """A mutated cost total cannot remain trustworthy evidence."""
+    report = build_report()
+    report.results[0].cost_usd = 0.05
+    report.total_cost_usd = None
+    assert any("total_cost_usd" in issue for issue in report.aggregate_issues())

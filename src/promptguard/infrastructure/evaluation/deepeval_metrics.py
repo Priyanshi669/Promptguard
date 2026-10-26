@@ -11,6 +11,7 @@ from promptguard.infrastructure.evaluation.rubric import (
     SUMMARY_QUALITY_CRITERIA,
     SUMMARY_QUALITY_EVALUATION_STEPS,
 )
+from promptguard.infrastructure.llm.retry import judge_parse_retry_policy
 
 
 class DeepEvalSummaryMetric(SummaryMetric):
@@ -42,12 +43,18 @@ class DeepEvalSummaryMetric(SummaryMetric):
             actual_output=actual_summary,
         )
 
-        await self._metric.a_measure(test_case)
+        async for attempt in judge_parse_retry_policy():
+            with attempt:
+                await self._measure(test_case)
 
         if self._metric.score is None:
             raise ValueError("DeepEval returned no summary score.")
 
         return self._normalize_score(self._metric.score)
+
+    async def _measure(self, test_case: LLMTestCase) -> None:
+        """Await a single judge measurement without retries."""
+        await self._metric.a_measure(test_case)
 
     @staticmethod
     def _normalize_score(score: float) -> float:

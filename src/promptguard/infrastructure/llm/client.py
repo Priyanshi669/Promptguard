@@ -1,6 +1,7 @@
 """NVIDIA-backed LLM client implementation."""
 
 import json
+import math
 import re
 import time
 from typing import Any
@@ -49,7 +50,7 @@ class NVIDIAClient(LLMClient):
         self,
         system_prompt: str,
         user_input: str,
-    ) -> tuple[LLMOutput, int, int]:
+    ) -> tuple[LLMOutput, int, int, float | None]:
         """Call the API, retrying only transient transport/provider failures.
 
         Invalid or empty model outputs are deterministic and surface directly
@@ -94,8 +95,30 @@ class NVIDIAClient(LLMClient):
 
         input_tokens = usage.prompt_tokens if usage else 0
         output_tokens = usage.completion_tokens if usage else 0
+        cost_usd = self._extract_usage_cost(usage)
 
-        return output, input_tokens, output_tokens
+        return output, input_tokens, output_tokens, cost_usd
+
+    @staticmethod
+    def _extract_usage_cost(usage: Any) -> float | None:
+        """Return the provider-reported cost only when it is trustworthy.
+
+        Some OpenAI-compatible providers attach a cost figure to the usage
+        object; the NVIDIA endpoint tested here does not, which yields
+        ``None`` instead of a fabricated price.
+        """
+        if usage is None:
+            return None
+        for source in (usage, getattr(usage, "model_extra", None)):
+            if not isinstance(source, dict):
+                candidate = getattr(source, "cost", None)
+            else:
+                candidate = source.get("cost", None)
+            if isinstance(candidate, int | float):
+                value = float(candidate)
+                if math.isfinite(value) and value >= 0:
+                    return value
+        return None
 
     async def generate(
         self,
@@ -105,7 +128,7 @@ class NVIDIAClient(LLMClient):
         """Generate and validate a structured LLM response."""
         start_time = time.perf_counter()
 
-        output, input_tokens, output_tokens = await self._call_llm(
+        output, input_tokens, output_tokens, cost_usd = await self._call_llm(
             system_prompt=system_prompt,
             user_input=user_input,
         )
@@ -115,6 +138,7 @@ class NVIDIAClient(LLMClient):
             latency_ms=(time.perf_counter() - start_time) * 1000,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
+            cost_usd=cost_usd,
         )
 
     @staticmethod

@@ -72,6 +72,8 @@ class LLMResponse(BaseModel):
 
     output_tokens: int = Field(ge=0)
 
+    cost_usd: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+
 
 class EvaluationResult(BaseModel):
     test_case_id: NonEmptyStr
@@ -96,6 +98,8 @@ class EvaluationResult(BaseModel):
 
     input_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
+
+    cost_usd: float | None = Field(default=None, ge=0, allow_inf_nan=False)
 
     critical: bool = False
 
@@ -183,6 +187,10 @@ class EvaluationReport(BaseModel):
     average_latency_ms: float = Field(ge=0)
     total_input_tokens: int = Field(ge=0)
     total_output_tokens: int = Field(ge=0)
+    total_cost_usd: float | None = Field(
+        default=None, ge=0, allow_inf_nan=False,
+    )
+    schema_version: int = Field(default=1, ge=1)
     results: list[EvaluationResult]
     eval_config_hash: str | None = None
     evaluator: dict[str, Any] | None = None
@@ -270,6 +278,7 @@ class EvaluationReport(BaseModel):
         expected_output_tokens = sum(
             result.output_tokens for result in self.results
         )
+        expected_cost = self._aggregate_cost(self.results)
 
         if not math.isclose(
             self.category_accuracy, expected_accuracy,
@@ -305,7 +314,20 @@ class EvaluationReport(BaseModel):
                 "Current run total_output_tokens is inconsistent with its "
                 "case results."
             )
+        if self.total_cost_usd != expected_cost:
+            issues.append(
+                "Current run total_cost_usd is inconsistent with its "
+                "case results."
+            )
         return issues
+
+    @classmethod
+    def _aggregate_cost(cls, results: list[EvaluationResult]) -> float | None:
+        """Sum provider-reported costs, or None when any case lacks one."""
+        costs = [result.cost_usd for result in results]
+        if not results or any(cost is None for cost in costs):
+            return None
+        return sum(result.cost_usd or 0.0 for result in results)
 
     def evidence_issues(self) -> list[str]:
         """Return all evidence problems that prevent a trustworthy gate."""

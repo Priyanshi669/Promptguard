@@ -1,5 +1,6 @@
 """Unit tests for the NVIDIA LLM client."""
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -138,6 +139,78 @@ async def test_generate_returns_structured_response(
     assert result.input_tokens == 20
     assert result.output_tokens == 10
     assert result.latency_ms >= 0
+
+
+@pytest.mark.asyncio
+async def test_generate_captures_provider_reported_cost(
+    mock_settings: MagicMock,
+    mock_openai_client: AsyncMock,
+) -> None:
+    """Client should capture a cost only when the provider attaches one."""
+    mock_response = MagicMock()
+
+    mock_response.choices = [
+        MagicMock(
+            message=MagicMock(
+                content='{"category": "billing", "summary": "Customer asks about a refund."}'
+            )
+        )
+    ]
+    usage = SimpleNamespace(
+        prompt_tokens=20,
+        completion_tokens=10,
+        cost=0.0123,
+    )
+    mock_response.usage = usage
+
+    mock_openai_client.chat.completions.create.return_value = mock_response
+
+    with patch(
+        "promptguard.infrastructure.llm.client.get_settings",
+        return_value=mock_settings,
+    ):
+        client = NVIDIAClient(client=mock_openai_client)
+        result = await client.generate(
+            system_prompt="Classify the customer message.",
+            user_input="I want a refund.",
+        )
+
+    assert result.cost_usd == pytest.approx(0.0123)
+
+
+@pytest.mark.asyncio
+async def test_generate_leaves_cost_absent_without_provider_figure(
+    mock_settings: MagicMock,
+    mock_openai_client: AsyncMock,
+) -> None:
+    """Providers without a cost figure yield None, not a fabricated price."""
+    mock_response = MagicMock()
+
+    mock_response.choices = [
+        MagicMock(
+            message=MagicMock(
+                content='{"category": "billing", "summary": "Customer asks about a refund."}'
+            )
+        )
+    ]
+    mock_response.usage = MagicMock(
+        prompt_tokens=20,
+        completion_tokens=10,
+    )
+
+    mock_openai_client.chat.completions.create.return_value = mock_response
+
+    with patch(
+        "promptguard.infrastructure.llm.client.get_settings",
+        return_value=mock_settings,
+    ):
+        client = NVIDIAClient(client=mock_openai_client)
+        result = await client.generate(
+            system_prompt="Classify the customer message.",
+            user_input="I want a refund.",
+        )
+
+    assert result.cost_usd is None
 
 
 @pytest.mark.asyncio

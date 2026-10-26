@@ -26,6 +26,8 @@ class TextReportFormatter(ReportFormatter):
         ]
         if report.eval_config_hash is not None:
             lines.append(f"Eval config hash: {report.eval_config_hash}")
+        if report.total_cost_usd is not None:
+            lines.append(f"Total cost: ${report.total_cost_usd:.4f}")
         if report.thresholds is not None:
             lines.append("Gate thresholds:")
             for name, value in report.thresholds.model_dump(

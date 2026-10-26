@@ -29,6 +29,8 @@ LLM_RETRY_WAIT = wait_exponential(
     max=8,
 )
 
+JUDGE_RETRY_ATTEMPTS = 3
+
 
 def llm_retry_policy() -> AsyncRetrying:
     """Create the bounded policy for transient transport and provider errors.
@@ -41,5 +43,22 @@ def llm_retry_policy() -> AsyncRetrying:
         retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
         wait=LLM_RETRY_WAIT,
         stop=stop_after_attempt(LLM_RETRY_ATTEMPTS),
+        reraise=True,
+    )
+
+
+def judge_parse_retry_policy() -> AsyncRetrying:
+    """Create the bounded policy for structurally invalid judge responses.
+
+    DeepEval's G-Eval fallback path extracts ``score`` from a judge JSON
+    blob; a response without that field raises a bare ``KeyError``. The
+    malformed response is redone from scratch against the judge rather
+    than clamped or defaulted, preserving the quality gate.
+    """
+
+    return AsyncRetrying(
+        retry=retry_if_exception_type(KeyError),
+        wait=LLM_RETRY_WAIT,
+        stop=stop_after_attempt(JUDGE_RETRY_ATTEMPTS),
         reraise=True,
     )
