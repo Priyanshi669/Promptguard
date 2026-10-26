@@ -1,12 +1,12 @@
 {
   "version": "v1",
-  "status": "provisional_card_pin_pending_review",
-  "manifest_sha256": "9100a2431327d830b3f334a844ec3647c6936338af1bf60832e943ed9ad87306",
+  "status": "approved",
+  "manifest_sha256": "3f541d284f6e3329b080d030eeca148afcedecbe17b0edb35903cb9d75d41382",
   "rubric_version": "v1",
   "rubric_sha256": "7ef7ca7fdfc4703c97ea933f9c5aa7a6afb0d658f647ce2e4ed2aaac2637b1d5",
   "total_examples": 100,
   "audit_examples": 20,
-  "pending_review_examples": 2,
+  "pending_review_examples": 0,
   "items": [
     {
       "id": "banking77-test-1768",
@@ -357,16 +357,16 @@
       "source_category": "get_physical_card",
       "source_input": "How do I find my card PIN?",
       "audit": false,
-      "inclusion_status": "pending_human_review"
+      "inclusion_status": "included"
     },
     {
-      "id": "banking77-test-0540",
+      "id": "banking77-test-1264",
       "source_split": "test",
       "category": "card_pin",
-      "source_category": "pin_blocked",
-      "source_input": "I'v exhausted all the of times I can try my PIN",
+      "source_category": "get_physical_card",
+      "source_input": "Is my PIN located on my account somewhere?",
       "audit": true,
-      "inclusion_status": "pending_human_review"
+      "inclusion_status": "included"
     },
     {
       "id": "banking77-test-1940",

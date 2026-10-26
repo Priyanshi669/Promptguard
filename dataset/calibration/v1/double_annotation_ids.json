@@ -2,7 +2,7 @@
   "version": "v1",
   "seed": "20261026",
   "selection": "first 20 ids ranked by sha256(seed + NUL + 'audit' + NUL + id)",
-  "manifest_sha256": "9100a2431327d830b3f334a844ec3647c6936338af1bf60832e943ed9ad87306",
+  "manifest_sha256": "3f541d284f6e3329b080d030eeca148afcedecbe17b0edb35903cb9d75d41382",
   "count": 20,
   "ids": [
     "banking77-test-2971",
@@ -17,9 +17,9 @@
     "banking77-test-1757",
     "banking77-test-0491",
     "banking77-test-1130",
+    "banking77-test-1264",
     "banking77-test-1051",
     "banking77-test-1680",
-    "banking77-test-0540",
     "banking77-test-2751",
     "banking77-test-1797",
     "banking77-test-2787",
@@ -88,6 +88,11 @@
       "source_category": "edit_personal_details"
     },
     {
+      "id": "banking77-test-1264",
+      "category": "card_pin",
+      "source_category": "get_physical_card"
+    },
+    {
       "id": "banking77-test-1051",
       "category": "balance_not_updated_after_cheque_or_cash_deposit",
       "source_category": "balance_not_updated_after_cheque_or_cash_deposit"
@@ -96,11 +101,6 @@
       "id": "banking77-test-1680",
       "category": "lost_or_stolen_phone",
       "source_category": "lost_or_stolen_phone"
-    },
-    {
-      "id": "banking77-test-0540",
-      "category": "card_pin",
-      "source_category": "pin_blocked"
     },
     {
       "id": "banking77-test-2751",
@@ -128,9 +128,6 @@
       "source_category": "balance_not_updated_after_bank_transfer"
     }
   ],
-  "status": "provisional_card_pin_pending_review",
-  "pending_review_ids": [
-    "banking77-test-1247",
-    "banking77-test-0540"
-  ]
+  "status": "approved",
+  "pending_review_ids": []
 }

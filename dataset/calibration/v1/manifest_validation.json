@@ -1,8 +1,8 @@
 {
   "manifest_path": "dataset/calibration/v1/sample_manifest.json",
-  "manifest_sha256": "9100a2431327d830b3f334a844ec3647c6936338af1bf60832e943ed9ad87306",
-  "validated_at": "2026-10-26T09:14:39.763775+00:00",
-  "status": "provisional_awaiting_card_pin_include_review",
+  "manifest_sha256": "3f541d284f6e3329b080d030eeca148afcedecbe17b0edb35903cb9d75d41382",
+  "validated_at": "2026-10-26T09:31:16.008384+00:00",
+  "status": "approved",
   "checks": {
     "total_examples_100": true,
     "unique_ids": true,
@@ -12,13 +12,15 @@
     "no_golden_overlap": true,
     "no_labels": true,
     "rubric_hash_matches_current": true,
-    "card_pin_pending_review": true
+    "card_pin_pending_review": false
   },
-  "blocking_issues": [
-    "card_pin has no exact BANKING77 label; per-case human inclusion review remains in progress.",
-    "Review round 1 (reviewer_id=1, reviewed_at=2026-10-26T14:00:00+05:30) excluded banking77-test-0524, banking77-test-0553.",
-    "Replacement cases banking77-test-1247 and banking77-test-0540 were selected deterministically and are pending human review.",
-    "Manifest approval and candidate generation stay blocked until each card_pin case in the manifest records a human decision."
+  "blocking_issues": [],
+  "card_pin_review_provenance": [
+    "Round 1 (reviewer_id=1, 2026-10-26T14:00:00+05:30): excluded banking77-test-0553 and banking77-test-0524 (reset/recovery intent).",
+    "Round 2-4 (reviewer_id=1): excluded banking77-test-0540, banking77-test-0548, and banking77-test-0542 (blocked/unblock/forgotten intents).",
+    "Round 2 include (reviewer_id=1, 2026-10-26T14:52:09+05:30): banking77-test-1247.",
+    "Round 5 include (reviewer_id=1, 2026-10-26T14:57:34+05:30): banking77-test-1264.",
+    "Manifest card_pin inclusion is now fully human-decided; structural validation passes with no blocking issues."
   ],
   "rubric_version": "v1",
   "rubric_sha256": "7ef7ca7fdfc4703c97ea933f9c5aa7a6afb0d658f647ce2e4ed2aaac2637b1d5"

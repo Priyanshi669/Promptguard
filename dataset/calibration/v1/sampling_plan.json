@@ -1,6 +1,6 @@
 {
   "version": "v1",
-  "status": "blocked_pending_card_pin_inclusion_review",
+  "status": "manifest_approved_awaiting_human_annotation",
   "purpose": "Calibrate the summary-quality judge against human labels before Level 2.2 multi-dimensional scoring.",
   "source": {
     "dataset": "BANKING77",
@@ -40,7 +40,7 @@
     ],
     "replacement": "next-ranked eligible case in the same category and length band",
     "manifest": "dataset/calibration/v1/sample_manifest.json",
-    "source_category_mapping_status": "pending_human_review",
+    "source_category_mapping_status": "superseded_by_per_case_human_review",
     "source_category_mapping_note": "BANKING77 has no exact card_pin label. get_physical_card covers PIN delivery/access; pin_blocked covers blocked/reset PIN. The two labels are not interchangeable.",
     "card_pin_inclusion_criteria": [
       "Include only cases whose primary intent is obtaining, locating, receiving, setting up, or viewing a card PIN.",
@@ -48,7 +48,17 @@
       "Treat source labels as candidate pools; a human reviewer must record the inclusion decision and rationale for each selected card_pin case."
     ],
     "card_pin_review_file": "dataset/calibration/v1/card_pin_inclusion_review.csv",
-    "current_manifest_card_pin_status": "not_validated"
+    "current_manifest_card_pin_status": "human_validated",
+    "card_pin_review_outcome": {
+      "rounds_completed": 5,
+      "reviewer_records": "reviewer_id=1 with reviewed_at timestamps per row",
+      "decisions_summary": "0553 exclude, 0524 exclude, 1247 include, 0540 exclude, 0548 exclude, 0542 exclude, 1264 include",
+      "manifest_card_pin_cases": {
+        "banking77-test-1247": "included",
+        "banking77-test-1264": "included"
+      },
+      "review_outcome_date": "2026-10-26"
+    }
   },
   "candidate_generation": {
     "prompt_version": "v1",

@@ -56,12 +56,12 @@ def test_sampling_plan_targets_the_reviewed_scope() -> None:
     """The plan should select the agreed unlabeled calibration scope."""
     plan = load_json(CALIBRATION_DIR / "sampling_plan.json")
 
-    assert plan["status"] == "blocked_pending_card_pin_inclusion_review"
+    assert plan["status"] == "manifest_approved_awaiting_human_annotation"
     assert plan["selection"]["source_category_mapping_status"] == (
-        "pending_human_review"
+        "superseded_by_per_case_human_review"
     )
     assert plan["selection"]["current_manifest_card_pin_status"] == (
-        "not_validated"
+        "human_validated"
     )
     assert plan["acceptance"]["requires_card_pin_inclusion_review"] is True
     assert plan["seed"] == "20261026"
@@ -88,10 +88,8 @@ def test_manifest_is_balanced_and_unlabeled() -> None:
     }
 
     assert manifest["total_examples"] == 100
-    assert manifest["manifest_status"] == (
-        "provisional_card_pin_pending_review"
-    )
-    assert manifest["pending_review_categories"] == ["card_pin"]
+    assert manifest["manifest_status"] == "approved"
+    assert manifest["pending_review_categories"] == []
     assert len(examples) == 100
     assert manifest["source_category_overrides"]["card_pin"] == [
         "get_physical_card",
@@ -129,7 +127,7 @@ def test_manifest_is_balanced_and_unlabeled() -> None:
     ]
     assert len(card_pin) == 2
     assert all(
-        example["inclusion_status"] == "pending_human_review"
+        example["inclusion_status"] == "included"
         for example in card_pin
     )
     assert all(
@@ -190,14 +188,14 @@ def test_annotation_queue_matches_manifest_and_audit() -> None:
     audit = load_json(CALIBRATION_DIR / "double_annotation_ids.json")
     queue = load_json(CALIBRATION_DIR / "annotation_queue.json")
 
-    assert queue["status"] == "provisional_card_pin_pending_review"
+    assert queue["status"] == "approved"
     assert queue["manifest_sha256"] == hashlib.sha256(
         (CALIBRATION_DIR / "sample_manifest.json").read_bytes()
     ).hexdigest()
     assert queue["rubric_sha256"] == summary_quality_rubric_sha256()
     assert queue["total_examples"] == 100
     assert queue["audit_examples"] == 20
-    assert queue["pending_review_examples"] == 2
+    assert queue["pending_review_examples"] == 0
     assert len(queue["items"]) == 100
     assert {item["id"] for item in queue["items"]} == {
         example["id"] for example in manifest["examples"]
@@ -206,7 +204,7 @@ def test_annotation_queue_matches_manifest_and_audit() -> None:
         item["id"] for item in queue["items"] if item["audit"]
     } == set(audit["ids"])
     assert all(
-        item["inclusion_status"] == "pending_human_review"
+        item["inclusion_status"] == "included"
         for item in queue["items"]
         if item["category"] == "card_pin"
     )
@@ -218,7 +216,7 @@ def test_double_annotation_ids_are_reproducible_and_unlabeled() -> None:
     audit = load_json(CALIBRATION_DIR / "double_annotation_ids.json")
     manifest_ids = {example["id"] for example in manifest["examples"]}
 
-    assert audit["status"] == "provisional_card_pin_pending_review"
+    assert audit["status"] == "approved"
     assert audit["count"] == 20
     assert len(audit["ids"]) == 20
     assert len(set(audit["ids"])) == 20
@@ -226,10 +224,7 @@ def test_double_annotation_ids_are_reproducible_and_unlabeled() -> None:
     assert audit["manifest_sha256"] == hashlib.sha256(
         (CALIBRATION_DIR / "sample_manifest.json").read_bytes()
     ).hexdigest()
-    assert audit["pending_review_ids"] == [
-        "banking77-test-1247",
-        "banking77-test-0540",
-    ]
+    assert audit["pending_review_ids"] == []
     assert all(
         "human_score" not in example
         for example in audit["examples"]
@@ -237,26 +232,29 @@ def test_double_annotation_ids_are_reproducible_and_unlabeled() -> None:
 
 
 def test_manifest_validation_records_the_blocking_issue() -> None:
-    """Structural checks should pass while semantic card_pin review is pending."""
+    """Structural checks pass; card_pin review is complete, not blocking."""
     report = load_json(CALIBRATION_DIR / "manifest_validation.json")
 
-    assert report["status"] == "provisional_awaiting_card_pin_include_review"
-    assert all(report["checks"].values())
+    assert report["status"] == "approved"
+    assert report["checks"]["card_pin_pending_review"] is False
+    assert all(
+        value is True for key, value in report["checks"].items()
+        if key != "card_pin_pending_review"
+    )
     assert report["rubric_sha256"] == summary_quality_rubric_sha256()
     assert report["manifest_sha256"] == hashlib.sha256(
         (CALIBRATION_DIR / "sample_manifest.json").read_bytes()
     ).hexdigest()
-    assert any("card_pin" in issue for issue in report["blocking_issues"])
+    assert report["blocking_issues"] == []
 
 
 def test_card_pin_review_documents_the_mapping_limitation() -> None:
-    """Round-1 human decisions must be recorded; new cases stay pending."""
+    """Every manifest card_pin case must carry a human include decision."""
     review = (CALIBRATION_DIR / "card_pin_coverage_review.md").read_text(
         encoding="utf-8"
     )
 
     assert "not exact" in review
-    assert "pending human inclusion review" in review
     assert "get_physical_card" in review
     assert "pin_blocked" in review
     assert "Human-reviewed inclusion criteria" in review
@@ -277,7 +275,27 @@ def test_card_pin_review_documents_the_mapping_limitation() -> None:
         "banking77-test-0524",
         "banking77-test-1247",
         "banking77-test-0540",
+        "banking77-test-0548",
+        "banking77-test-0542",
+        "banking77-test-1264",
     }
+    assert all(
+        row["decision"] in ("include", "exclude")
+        and row["rationale"].startswith("Reviewed by reviewer 1.")
+        and row["reviewer_id"] == "1"
+        and row["reviewed_at"]
+        for row in rows
+    )
+
+    manifest = load_json(CALIBRATION_DIR / "sample_manifest.json")
+    manifest_card_pin = [
+        example for example in manifest["examples"]
+        if example["category"] == "card_pin"
+    ]
+    included_ids = {
+        row["id"] for row in rows if row["decision"] == "include"
+    }
+    assert {str(example["id"]) for example in manifest_card_pin} <= included_ids
 
     round_one = [
         row
@@ -293,19 +311,6 @@ def test_card_pin_review_documents_the_mapping_limitation() -> None:
     )
     assert len(round_one) == 2
 
-    pending_rows = [
-        row for row in rows if row["id"] in {
-            "banking77-test-1247",
-            "banking77-test-0540",
-        }
-    ]
-    assert len(pending_rows) == 2
-    assert all(
-        row["decision"] == ""
-        and row["reviewer_id"] == ""
-        and row["reviewed_at"] == ""
-        for row in pending_rows
-    )
     assert {
         "id",
         "source_category",

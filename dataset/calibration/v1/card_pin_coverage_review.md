@@ -1,29 +1,33 @@
 # card_pin coverage review
 
-Status: **round 1 reviewed (both selected cases excluded); replacements
-pending human inclusion review**
+Status: **cards_pin per-case review complete; manifest approved**
 
-## Review round 1 outcome
+## Review rounds (reviewer 1)
 
-Reviewer 1 (reviewed 2026-10-26T14:00:00+05:30) applied the
-human-reviewed inclusion criteria below to the two manifest cases:
+| Round | Sample | Decision | Primary intent (human-recorded) |
+|---|---|---|---|
+| 1 | `banking77-test-0553` | exclude | PIN-reset |
+| 1 | `banking77-test-0524` | exclude | PIN-recovery |
+| 2 | `banking77-test-1247` | include | PIN located or viewed |
+| 2 | `banking77-test-0540` | exclude | PIN attempts exhausted |
+| 3 | `banking77-test-0548` | exclude | PIN unblock |
+| 4 | `banking77-test-0542` | exclude | Forgotten PIN locked out |
+| 5 | `banking77-test-1264` | include | PIN located or viewed |
 
-- `banking77-test-0553` — **exclude**, primary intent recorded as
-  PIN-reset (blocked/reset PIN is out of scope).
-- `banking77-test-0524` — **exclude**, primary intent recorded as
-  PIN-recovery (blocked/reset PIN is out of scope).
+Timestamps and full rationales are recorded per row in
+`v1/card_pin_inclusion_review.csv`. Replacement cases were selected
+deterministically (next-ranked eligible in the same category and length
+band) after each exclusion.
 
-Both decisions and rationales are recorded in
-`v1/card_pin_inclusion_review.csv`. The manifest was regenerated
-deterministically; the excluded cases were replaced by the next-ranked
-eligible cases in the same category and length band:
+## Final manifest card_pin selection
 
 - `banking77-test-1247` (short band): "How do I find my card PIN?"
-- `banking77-test-0540` (long band): "I'v exhausted all the of times I
-  can try my PIN"
+- `banking77-test-1264` (long band): "Is my PIN located on my account
+  somewhere?"
 
-These replacement cases are pending human review in the same review
-file. Do not annotate them until reviewer 1 records decisions.
+Both carry human `include` decisions with reviewer id and timestamp.
+The manifest generator derives `manifest_status: approved` and empty
+`pending_review_categories` only from those completed human rows.
 
 ## Question
 
@@ -109,11 +113,11 @@ adjudicate before updating the manifest.
 
 ## Manifest action
 
-Until the review is complete:
+Review outcome:
 
-- Keep the two `card_pin` manifest entries marked
-  `inclusion_status: pending_human_review`.
-- Do not generate `judge_calibration.json`.
-- Do not run `promptguard-calibrate`.
-- After review, replace excluded cases deterministically from the reviewed
-  `card_pin` pool, update the manifest, and re-run structural validation.
+- The manifest card_pin cases carry human `inclusion_status: included`.
+- Structural validation passes with no blocking issues.
+- Candidate generation (`generate_calibration_outputs.py`) is permitted
+  by the approval gate.
+- Annotation proceeds under the provenance rules below; the reviewer
+  file remains the record of every card_pin decision.

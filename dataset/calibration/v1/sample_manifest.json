@@ -1,6 +1,6 @@
 {
   "version": "v1",
-  "manifest_status": "provisional_card_pin_pending_review",
+  "manifest_status": "approved",
   "seed": "20261026",
   "source_path": "dataset/source/banking77/test.csv",
   "golden_dataset_path": "dataset/v1/golden_dataset.json",
@@ -11,9 +11,7 @@
       "pin_blocked"
     ]
   },
-  "pending_review_categories": [
-    "card_pin"
-  ],
+  "pending_review_categories": [],
   "total_examples": 100,
   "examples": [
     {
@@ -366,17 +364,17 @@
       "source_input": "How do I find my card PIN?",
       "word_count": 7,
       "length_band": "short",
-      "inclusion_status": "pending_human_review"
+      "inclusion_status": "included"
     },
     {
-      "id": "banking77-test-0540",
+      "id": "banking77-test-1264",
       "source_split": "test",
       "category": "card_pin",
-      "source_category": "pin_blocked",
-      "source_input": "I'v exhausted all the of times I can try my PIN",
-      "word_count": 11,
+      "source_category": "get_physical_card",
+      "source_input": "Is my PIN located on my account somewhere?",
+      "word_count": 8,
       "length_band": "long",
-      "inclusion_status": "pending_human_review"
+      "inclusion_status": "included"
     },
     {
       "id": "banking77-test-1940",
