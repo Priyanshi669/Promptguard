@@ -6,13 +6,14 @@ from pydantic import BaseModel
 
 from promptguard.domain.enums import QualityGateStatus
 from promptguard.domain.thresholds import ThresholdViolation
+from promptguard.domain.types import NonEmptyStr
 
 
 class EvaluationComparison(BaseModel):
     """Metric deltas between a baseline and a current evaluation run."""
 
-    baseline_run_id: str
-    current_run_id: str
+    baseline_run_id: NonEmptyStr
+    current_run_id: NonEmptyStr
     baseline_category_accuracy: float
     current_category_accuracy: float
     category_accuracy_delta: float
@@ -41,7 +42,7 @@ class EvaluationComparison(BaseModel):
 class CaseRegressionStatus(BaseModel):
     """Per-case regression status for individual test cases."""
 
-    test_case_id: str
+    test_case_id: NonEmptyStr
     baseline_category_match: bool | None = None
     current_category_match: bool | None = None
     status: Literal["new_failure", "resolved_failure", "unchanged_failure", "unchanged_pass", "unknown"]

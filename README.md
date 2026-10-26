@@ -42,6 +42,12 @@ promptguard [--prompt-version v1] [--baseline latest|RUN_ID] [--limit N]
             [--runs-dir runs]
 ```
 
+`--prompt-version` and `--baseline` values must be simple identifiers
+containing only letters, digits, dots, hyphens, or underscores, and must
+start with a letter or digit. Repository paths are resolved and constrained
+to their configured directories. Threshold values must be finite; an infinite
+latency threshold is rejected rather than disabling the latency gate.
+
 Exit codes: `0` = PASS, `1` = FAIL, `2` = INCONCLUSIVE or a
 configuration/provider/data error. A run is INCONCLUSIVE when no
 thresholds are configured, when a configured drop threshold cannot be
@@ -65,8 +71,11 @@ without a fingerprint is INCONCLUSIVE rather than silently accepted.
 
 Timestamps are normalized to UTC and must be timezone-aware. Reports with
 naive, missing, or malformed timestamps are skipped when listing runs and
-selecting the latest baseline; skipped files are recorded in
-`skipped_runs`. Aggregate accuracy, score, latency, and token totals are
+recorded in `skipped_runs`. Selecting `--baseline latest` refuses to fall
+back to an older report when any persisted run file is invalid; the run is
+INCONCLUSIVE and the skipped-file diagnostics are printed by the CLI.
+Explicit baseline IDs still load their requested report. Aggregate accuracy,
+score, latency, and token totals are
 validated against the stored case results, and inconsistent evidence is
 INCONCLUSIVE rather than trusted. Slack notification is enabled only when
 `SLACK_WEBHOOK_URL` is set in `.env`; delivery failures are reported as
@@ -88,7 +97,8 @@ when aggregate metrics and baseline comparisons pass.
 
 The Docker build context is filtered by `.dockerignore`; local `.env`
 files, VCS data, virtual environments, caches, runs, and reports are not
-copied into the image.
+copied into the image. The runtime image installs production dependencies
+only and runs as the unprivileged `appuser`.
 
 Set `NVIDIA_TEMPERATURE` and `NVIDIA_SEED` in `.env` to make generation
 and judging reproducible (both are optional).

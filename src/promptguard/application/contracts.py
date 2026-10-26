@@ -24,6 +24,11 @@ class EvaluationRunRepository(ABC):
     def list_runs(self) -> list[EvaluationReport]:
         """Return all persisted reports in timestamp order."""
 
+    @property
+    def skipped_runs(self) -> list[str]:
+        """Return diagnostics for files skipped by the last list operation."""
+        return []
+
 
 class ReportFormatter(ABC):
     """Render an evaluation report for a human reader."""

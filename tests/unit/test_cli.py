@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from promptguard.application.reporting_service import ReportingService
 from promptguard.domain.models import GoldenTestCase
@@ -93,6 +94,30 @@ async def test_run_enforces_evaluation_deadline() -> None:
         await cli._run(["--prompt-version", "v1"])
 
 
+@pytest.mark.asyncio
+async def test_run_rejects_invalid_prompt_version_before_setup() -> None:
+    """Prompt versions must not traverse outside the dataset directory."""
+    with pytest.raises(ValueError, match="prompt version"):
+        await cli._run(["--prompt-version", "../outside"])
+
+
+@pytest.mark.asyncio
+async def test_run_rejects_invalid_baseline_before_setup() -> None:
+    """Baseline IDs must not traverse outside the runs directory."""
+    with pytest.raises(ValueError, match="baseline run ID"):
+        await cli._run(["--baseline", "../outside"])
+
+
+def test_build_run_service_rejects_invalid_prompt_version() -> None:
+    """The service builder must reject unsafe prompt versions directly."""
+    with pytest.raises(ValueError, match="prompt version"):
+        cli._build_run_service(
+            prompt_version="../outside",
+            runs_dir=MagicMock(),
+            notifier=MagicMock(),
+        )
+
+
 def test_parse_args_defaults() -> None:
     """Defaults should keep the basic CLI path free of thresholds."""
     args = cli._parse_args([])
@@ -123,6 +148,14 @@ def test_parse_args_builds_thresholds() -> None:
     assert thresholds.minimum_summary_score == 3.5
     assert thresholds.maximum_average_latency_ms == 1500
     assert args.baseline == "latest"
+
+
+def test_build_thresholds_rejects_infinite_latency() -> None:
+    """An infinite latency threshold must not disable the latency gate."""
+    args = cli._parse_args(["--max-latency-ms", "inf"])
+
+    with pytest.raises(ValidationError):
+        cli._build_thresholds(args)
 
 
 def test_parse_args_builds_drop_thresholds() -> None:

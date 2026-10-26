@@ -8,16 +8,26 @@ from pydantic import BaseModel, Field
 class RegressionThresholds(BaseModel):
     """Optional limits used to evaluate a run against quality goals."""
 
-    minimum_category_accuracy: float | None = Field(default=None, ge=0, le=1)
-    minimum_summary_score: float | None = Field(default=None, ge=1, le=5)
-    maximum_average_latency_ms: float | None = Field(default=None, ge=0)
-    maximum_category_accuracy_drop: float | None = Field(default=None, ge=0, le=1)
-    maximum_summary_score_drop: float | None = Field(default=None, ge=0, le=4)
+    minimum_category_accuracy: float | None = Field(
+        default=None, ge=0, le=1, allow_inf_nan=False,
+    )
+    minimum_summary_score: float | None = Field(
+        default=None, ge=1, le=5, allow_inf_nan=False,
+    )
+    maximum_average_latency_ms: float | None = Field(
+        default=None, ge=0, allow_inf_nan=False,
+    )
+    maximum_category_accuracy_drop: float | None = Field(
+        default=None, ge=0, le=1, allow_inf_nan=False,
+    )
+    maximum_summary_score_drop: float | None = Field(
+        default=None, ge=0, le=4, allow_inf_nan=False,
+    )
     maximum_category_accuracy_drop_pct: float | None = Field(
-        default=None, ge=0, le=100,
+        default=None, ge=0, le=100, allow_inf_nan=False,
     )
     maximum_summary_score_drop_pct: float | None = Field(
-        default=None, ge=0, le=100,
+        default=None, ge=0, le=100, allow_inf_nan=False,
     )
 
 

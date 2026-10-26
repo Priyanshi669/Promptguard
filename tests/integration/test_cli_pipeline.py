@@ -144,3 +144,31 @@ async def test_cli_returns_two_without_a_gate(
     )
 
     assert exit_code == 2
+
+
+@pytest.mark.asyncio
+async def test_cli_latest_baseline_fails_on_corrupted_run(
+    tmp_path: Path,
+    golden_cases: list[GoldenTestCase],
+    cli_environment: None,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A corrupted latest run must fail clearly and surface diagnostics."""
+    FakeLLMClient.responses = script(golden_cases[:2])
+    (tmp_path / "bad.json").write_text("{not json", encoding="utf-8")
+
+    exit_code = await cli._run(
+        [
+            "--limit",
+            "2",
+            "--runs-dir",
+            str(tmp_path),
+            "--baseline",
+            "latest",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "persisted evaluation run files were skipped" in captured.err
+    assert "bad.json" in captured.err

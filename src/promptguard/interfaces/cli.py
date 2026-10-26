@@ -26,6 +26,7 @@ from promptguard.infrastructure.dataset.json_repository import JsonDatasetReposi
 from promptguard.infrastructure.evaluation.deepeval_metrics import DeepEvalSummaryMetric
 from promptguard.infrastructure.llm.client import NVIDIAClient
 from promptguard.infrastructure.notifications.slack import NoopNotifier, SlackNotifier
+from promptguard.infrastructure.path_safety import validate_identifier
 from promptguard.infrastructure.persistence.repositories import (
     JsonEvaluationRunRepository,
 )
@@ -163,6 +164,7 @@ def _build_run_service(
     notifier: Notifier,
 ) -> tuple[EvaluationRunService, str, list, dict[str, Any]]:
     """Wire the orchestrator with concrete infrastructure adapters."""
+    validate_identifier(prompt_version, kind="prompt version")
     dataset_path = PROJECT_ROOT / "dataset" / prompt_version / "golden_dataset.json"
     prompts_dir = PROJECT_ROOT / "prompts"
     settings = get_settings()
@@ -205,6 +207,9 @@ def _build_run_service(
 async def _run(argv: list[str] | None = None) -> int:
     """Run the evaluation pipeline and return the process exit code."""
     args = _parse_args(argv)
+    validate_identifier(args.prompt_version, kind="prompt version")
+    if args.baseline is not None:
+        validate_identifier(args.baseline, kind="baseline run ID")
     settings = get_settings()
 
     run_service, system_prompt, test_cases, eval_config = _build_run_service(
@@ -237,6 +242,14 @@ async def _run(argv: list[str] | None = None) -> int:
 
     if outcome.notification_error is not None:
         print(f"Warning: {outcome.notification_error}", file=sys.stderr)
+
+    if outcome.skipped_runs:
+        print(
+            "Warning: persisted evaluation run files were skipped:",
+            file=sys.stderr,
+        )
+        for diagnostic in outcome.skipped_runs:
+            print(f"  {diagnostic}", file=sys.stderr)
 
     return _exit_code_for(outcome.report)
 

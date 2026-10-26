@@ -82,6 +82,11 @@ class FakeRepository(EvaluationRunRepository):
 
     def __init__(self) -> None:
         self.saved: list = []
+        self._skipped_runs: list[str] = []
+
+    @property
+    def skipped_runs(self) -> list[str]:
+        return list(self._skipped_runs)
 
     def save(self, report) -> None:
         self.saved.append(report)
@@ -93,6 +98,8 @@ class FakeRepository(EvaluationRunRepository):
         raise FileNotFoundError(run_id)
 
     def get_latest(self):
+        if self._skipped_runs:
+            return None
         return self.saved[-1] if self.saved else None
 
     def list_runs(self) -> list:
@@ -257,6 +264,63 @@ async def test_run_latest_baseline_uses_repository() -> None:
         outcome.comparison.baseline_run_id
         == first.report.run_id  # type: ignore[union-attr]
     )
+
+
+@pytest.mark.asyncio
+async def test_run_latest_baseline_refuses_skipped_runs() -> None:
+    """A corrupted run must not silently fall back to an older baseline."""
+    repository = FakeRepository()
+    service, _ = build_service([result()], repository=repository)
+    await run(service)
+    repository._skipped_runs.append("bad.json: invalid evaluation run")
+    second_service, _ = build_service([result()], repository=repository)
+
+    outcome = await run(second_service, baseline_run_id="latest")
+
+    assert outcome.comparison is None
+    assert outcome.report.regression is not None  # type: ignore[union-attr]
+    assert outcome.report.regression.status == "INCONCLUSIVE"  # type: ignore[union-attr]
+    assert outcome.skipped_runs == ["bad.json: invalid evaluation run"]
+    assert any(
+        "could not be loaded" in reason
+        for reason in outcome.report.regression.incompatibility_reasons  # type: ignore[union-attr]
+    )
+
+
+@pytest.mark.asyncio
+async def test_run_latest_baseline_without_valid_run_is_inconclusive() -> None:
+    """An empty repository should remain a clear missing-baseline case."""
+    repository = FakeRepository()
+    service, _ = build_service([result()], repository=repository)
+
+    outcome = await run(service, baseline_run_id="latest")
+
+    assert outcome.comparison is None
+    assert outcome.skipped_runs == []
+    assert outcome.report.regression is not None  # type: ignore[union-attr]
+    assert outcome.report.regression.status == "INCONCLUSIVE"  # type: ignore[union-attr]
+    assert any(
+        "no baseline run was found" in reason
+        for reason in outcome.report.regression.incompatibility_reasons  # type: ignore[union-attr]
+    )
+
+
+@pytest.mark.asyncio
+async def test_explicit_baseline_still_loads_with_skipped_runs() -> None:
+    """An explicit valid run ID must remain usable despite invalid siblings."""
+    repository = FakeRepository()
+    service, _ = build_service([result()], repository=repository)
+    first = await run(service)
+    repository._skipped_runs.append("bad.json: invalid evaluation run")
+    second_service, _ = build_service([result()], repository=repository)
+
+    outcome = await run(
+        second_service,
+        baseline_run_id=first.report.run_id,  # type: ignore[union-attr]
+    )
+
+    assert outcome.comparison is not None
+    assert outcome.skipped_runs == ["bad.json: invalid evaluation run"]
 
 
 @pytest.mark.asyncio

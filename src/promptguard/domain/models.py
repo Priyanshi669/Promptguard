@@ -1,11 +1,10 @@
 import math
 from datetime import UTC, datetime
-from typing import Annotated, Literal
+from typing import Literal
 
 from pydantic import (
     BaseModel,
     Field,
-    StringConstraints,
     field_validator,
     model_validator,
 )
@@ -13,12 +12,9 @@ from pydantic import (
 from promptguard.domain.drift import CategoryDriftResult
 from promptguard.domain.regression import EvaluationComparison, RegressionResult
 from promptguard.domain.thresholds import RegressionThresholds
+from promptguard.domain.types import NonEmptyStr
 
 Difficulty = Literal["easy", "medium", "hard"]
-NonEmptyStr = Annotated[
-    str,
-    StringConstraints(strip_whitespace=True, min_length=1),
-]
 
 
 class GoldenTestCase(BaseModel):
@@ -103,6 +99,21 @@ class EvaluationResult(BaseModel):
 
     critical: bool = False
 
+    def text_issues(self) -> list[str]:
+        """Return violations of required non-empty evidence text."""
+        issues: list[str] = []
+        for field_name in (
+            "test_case_id",
+            "expected_category",
+            "actual_category",
+            "expected_summary",
+            "actual_summary",
+        ):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                issues.append(f"{field_name} must be a non-empty string")
+        return issues
+
     def metric_issues(self) -> list[str]:
         """Return violations of finite and range metric invariants."""
         issues: list[str] = []
@@ -135,11 +146,11 @@ class EvaluationResult(BaseModel):
 class EvaluationReport(BaseModel):
     """Complete, infrastructure-independent record of an evaluation run."""
 
-    run_id: str
+    run_id: NonEmptyStr
     timestamp: datetime
-    prompt_version: str
-    model: str
-    dataset: str
+    prompt_version: NonEmptyStr
+    model: NonEmptyStr
+    dataset: NonEmptyStr
     case_count: int = Field(ge=0)
     category_accuracy: float = Field(ge=0, le=1)
     average_summary_score: float = Field(ge=0, le=5)
@@ -149,7 +160,7 @@ class EvaluationReport(BaseModel):
     results: list[EvaluationResult]
     eval_config_hash: str | None = None
     thresholds: RegressionThresholds | None = None
-    baseline_run_id: str | None = None
+    baseline_run_id: NonEmptyStr | None = None
     comparison: EvaluationComparison | None = None
     regression: RegressionResult | None = None
     drift: CategoryDriftResult | None = None
@@ -278,6 +289,22 @@ class EvaluationReport(BaseModel):
                 "Current run has no evaluated cases; refusing to evaluate "
                 "quality gates.",
             )
+        for field_name in ("run_id", "prompt_version", "model", "dataset"):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                issues.append(f"Current run has a blank {field_name}.")
+        if self.baseline_run_id is not None and not self.baseline_run_id.strip():
+            issues.append("Current run has a blank baseline_run_id.")
+        if self.comparison is not None:
+            for field_name in ("baseline_run_id", "current_run_id"):
+                value = getattr(self.comparison, field_name)
+                if not isinstance(value, str) or not value.strip():
+                    issues.append(f"Comparison has a blank {field_name}.")
+        for index, result in enumerate(self.results):
+            for issue in result.text_issues():
+                issues.append(
+                    f"Result {index} ({result.test_case_id}): {issue}."
+                )
         case_ids = [result.test_case_id for result in self.results]
         if any(not case_id.strip() for case_id in case_ids):
             issues.append("Current run contains blank test case ids.")

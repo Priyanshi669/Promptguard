@@ -4,7 +4,7 @@ import hashlib
 import json
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from promptguard.application.comparison_service import (
     ComparisonService,
@@ -32,6 +32,7 @@ class EvaluationRunOutcome(BaseModel):
     comparison: EvaluationComparison | None = None
     report_text: str | None = None
     notification_error: str | None = None
+    skipped_runs: list[str] = Field(default_factory=list)
 
 
 class EvaluationRunService:
@@ -61,6 +62,13 @@ class EvaluationRunService:
         self._repository = repository
         self._formatter = formatter
         self._notifier = notifier
+
+    @property
+    def skipped_runs(self) -> list[str]:
+        """Return diagnostics for persisted run files skipped by the repository."""
+        if self._repository is None:
+            return []
+        return list(self._repository.skipped_runs)
 
     async def run(
         self,
@@ -97,14 +105,21 @@ class EvaluationRunService:
 
         baseline_requested = baseline_run_id is not None
         baseline = self._load_baseline(baseline_run_id)
+        skipped_runs = self.skipped_runs
         comparison: EvaluationComparison | None = None
         incompatibility_reasons: list[str] = []
         baseline_results_dict: dict[str, EvaluationResult] | None = None
 
         if baseline_requested and baseline is None:
-            incompatibility_reasons.append(
-                "Baseline was requested but no baseline run was found."
-            )
+            if baseline_run_id == LATEST_BASELINE and skipped_runs:
+                incompatibility_reasons.append(
+                    "Cannot select the latest baseline because persisted run "
+                    "files could not be loaded: " + "; ".join(skipped_runs)
+                )
+            else:
+                incompatibility_reasons.append(
+                    "Baseline was requested but no baseline run was found."
+                )
 
         if baseline is not None:
             incompatibility_reasons.extend(
@@ -153,6 +168,7 @@ class EvaluationRunService:
             comparison=comparison,
             report_text=report_text,
             notification_error=notification_error,
+            skipped_runs=skipped_runs,
         )
 
     @staticmethod

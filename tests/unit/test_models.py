@@ -3,6 +3,7 @@ import math
 import pytest
 from pydantic import ValidationError
 
+from promptguard.application.comparison_service import ComparisonService
 from promptguard.application.reporting_service import ReportingService
 from promptguard.domain.models import (
     EvaluationReport,
@@ -11,6 +12,8 @@ from promptguard.domain.models import (
     LLMOutput,
     LLMResponse,
 )
+from promptguard.domain.regression import EvaluationComparison
+from promptguard.domain.thresholds import RegressionThresholds
 
 
 def test_valid_llm_output():
@@ -238,6 +241,66 @@ def test_report_rejects_blank_result_id_evidence() -> None:
         "blank test case ids" in issue
         for issue in report.evidence_issues()
     )
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["run_id", "prompt_version", "model", "dataset", "baseline_run_id"],
+)
+def test_report_rejects_blank_identifiers(field: str) -> None:
+    """Persisted report identity fields cannot be blank."""
+    payload = build_report().model_dump()
+    payload[field] = "   "
+
+    with pytest.raises(ValidationError):
+        EvaluationReport.model_validate(payload)
+
+
+def test_report_rejects_mutated_blank_identifier_evidence() -> None:
+    """A mutated blank report identity must not satisfy a quality gate."""
+    report = build_report()
+    report.run_id = "   "
+
+    assert any(
+        "blank run_id" in issue for issue in report.evidence_issues()
+    )
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "expected_category",
+        "actual_category",
+        "expected_summary",
+        "actual_summary",
+    ],
+)
+def test_report_rejects_mutated_blank_result_text(field: str) -> None:
+    """Mutated result text must still be rejected as evidence."""
+    report = build_report()
+    setattr(report.results[0], field, "   ")
+
+    assert any(
+        field in issue for issue in report.evidence_issues()
+    )
+
+
+def test_comparison_rejects_blank_run_ids() -> None:
+    """Comparison identifiers must remain non-empty when persisted."""
+    comparison = ComparisonService().compare(
+        build_report(), build_report(),
+    )
+    payload = comparison.model_dump()
+    payload["current_run_id"] = "   "
+
+    with pytest.raises(ValidationError):
+        EvaluationComparison.model_validate(payload)
+
+
+def test_thresholds_reject_infinite_latency() -> None:
+    """An infinite latency threshold would disable the latency gate."""
+    with pytest.raises(ValidationError):
+        RegressionThresholds(maximum_average_latency_ms=math.inf)
 
 
 def test_report_rejects_case_count_mismatch() -> None:

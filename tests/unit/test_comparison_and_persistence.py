@@ -332,6 +332,21 @@ class TestThresholds:
                    for reason in decision.incompatibility_reasons)
         assert _exit_code_for(built) == 2
 
+    def test_mutated_blank_result_text_cannot_pass_gate(self) -> None:
+        """Mutated result text cannot produce PASS or CLI exit code 0."""
+        built = report(results(1, 1))
+        built.results[0].actual_summary = "   "
+        decision = RegressionService().evaluate(
+            built,
+            RegressionThresholds(minimum_category_accuracy=0.0),
+        )
+        built.regression = decision
+
+        assert decision.status == "INCONCLUSIVE"
+        assert any("actual_summary" in reason
+                   for reason in decision.incompatibility_reasons)
+        assert _exit_code_for(built) == 2
+
     def test_inconsistent_aggregate_is_inconclusive(self) -> None:
         """A mutated aggregate cannot satisfy a threshold by itself."""
         built = report(results(0, 1))
@@ -893,6 +908,63 @@ class TestJsonPersistence:
         with pytest.raises(FileNotFoundError):
             repository.get("no-such-run")
 
+    def test_get_rejects_parent_directory_traversal(
+        self, tmp_path: Path,
+    ) -> None:
+        """A run ID must not read outside the configured runs directory."""
+        runs_dir = tmp_path / "runs"
+        runs_dir.mkdir()
+        outside = tmp_path / "outside.json"
+        outside.write_text(
+            report(results(1, 1)).model_dump_json(), encoding="utf-8",
+        )
+        repository = JsonEvaluationRunRepository(runs_dir)
+
+        with pytest.raises(ValueError, match="evaluation run ID"):
+            repository.get("../outside")
+
+    def test_save_rejects_parent_directory_traversal(
+        self, tmp_path: Path,
+    ) -> None:
+        """A report ID must not write outside the configured runs directory."""
+        runs_dir = tmp_path / "runs"
+        repository = JsonEvaluationRunRepository(runs_dir)
+        saved = report(results(1, 1))
+        saved.run_id = "../outside"
+
+        with pytest.raises(ValueError, match="evaluation run ID"):
+            repository.save(saved)
+
+        assert not (tmp_path / "outside.json").exists()
+
+    def test_save_rejects_mutated_invalid_report(
+        self, tmp_path: Path,
+    ) -> None:
+        """Persistence must revalidate report evidence before writing."""
+        repository = JsonEvaluationRunRepository(tmp_path)
+        saved = report(results(1, 1))
+        saved.results[0].actual_summary = "   "
+
+        with pytest.raises(ValidationError):
+            repository.save(saved)
+
+        assert not (tmp_path / f"{saved.run_id}.json").exists()
+
+    def test_get_rejects_blank_persisted_run_id(
+        self, tmp_path: Path,
+    ) -> None:
+        """A persisted blank report identifier cannot be loaded."""
+        repository = JsonEvaluationRunRepository(tmp_path)
+        saved = report(results(1, 1))
+        data = saved.model_dump(mode="json")
+        data["run_id"] = "   "
+        (tmp_path / "blank.json").write_text(
+            json.dumps(data), encoding="utf-8",
+        )
+
+        with pytest.raises(ValueError, match="Invalid evaluation run"):
+            repository.get("blank")
+
     def test_corrupted_json_is_skipped_by_list_runs(self, tmp_path: Path) -> None:
         repository = JsonEvaluationRunRepository(tmp_path)
         (tmp_path / "bad.json").write_text("{not json", encoding="utf-8")
@@ -957,15 +1029,14 @@ class TestJsonPersistence:
         assert [item.run_id for item in repository.list_runs()] == [saved.run_id]
         assert repository.skipped_runs
 
-    def test_get_latest_skips_malformed_files(self, tmp_path: Path) -> None:
+    def test_get_latest_refuses_malformed_files(self, tmp_path: Path) -> None:
         repository = JsonEvaluationRunRepository(tmp_path)
         saved = report(results(1, 1))
         repository.save(saved)
         (tmp_path / "bad.json").write_text("{not json", encoding="utf-8")
 
-        latest = repository.get_latest()
-        assert latest is not None
-        assert latest.run_id == saved.run_id
+        assert repository.get_latest() is None
+        assert any("bad.json" in item for item in repository.skipped_runs)
 
     def test_save_and_load_preserves_comparison_even_when_pass(
         self, tmp_path: Path,
@@ -1053,9 +1124,7 @@ class TestTimestampPolicy:
             saved.run_id,
         ]
         assert any("missing.json" in item for item in repository.skipped_runs)
-        latest = repository.get_latest()
-        assert latest is not None
-        assert latest.run_id == saved.run_id
+        assert repository.get_latest() is None
 
     def test_malformed_timestamp_is_skipped_by_selection(
         self, tmp_path: Path,
@@ -1075,9 +1144,7 @@ class TestTimestampPolicy:
         assert any(
             "malformed.json" in item for item in repository.skipped_runs
         )
-        latest = repository.get_latest()
-        assert latest is not None
-        assert latest.run_id == saved.run_id
+        assert repository.get_latest() is None
 
     def test_equal_timestamps_use_run_id_as_tiebreaker(
         self, tmp_path: Path,
@@ -1136,6 +1203,41 @@ class TestTimestampPolicy:
 
         assert [item.run_id for item in runs] == [current.run_id]
         assert any("legacy.json" in item for item in repository.skipped_runs)
-        latest = repository.get_latest()
-        assert latest is not None
-        assert latest.run_id == current.run_id
+        assert repository.get_latest() is None
+
+
+class TestLatestBaselineIntegrity:
+    """Latest-baseline selection must not hide corrupted persisted runs."""
+
+    def test_latest_refuses_mixed_valid_and_invalid_runs(
+        self, tmp_path: Path,
+    ) -> None:
+        repository = JsonEvaluationRunRepository(tmp_path)
+        saved = report(results(1, 1))
+        repository.save(saved)
+        (tmp_path / "bad.json").write_text("{not json", encoding="utf-8")
+
+        assert repository.get_latest() is None
+        assert any("bad.json" in item for item in repository.skipped_runs)
+
+    def test_latest_returns_none_when_no_valid_run_exists(
+        self, tmp_path: Path,
+    ) -> None:
+        repository = JsonEvaluationRunRepository(tmp_path)
+        (tmp_path / "bad.json").write_text("{not json", encoding="utf-8")
+
+        assert repository.get_latest() is None
+        assert any("bad.json" in item for item in repository.skipped_runs)
+
+    def test_explicit_id_loads_valid_report_with_invalid_sibling(
+        self, tmp_path: Path,
+    ) -> None:
+        repository = JsonEvaluationRunRepository(tmp_path)
+        saved = report(results(1, 1))
+        repository.save(saved)
+        (tmp_path / "bad.json").write_text("{not json", encoding="utf-8")
+        repository.list_runs()
+
+        loaded = repository.get(saved.run_id)
+
+        assert loaded.run_id == saved.run_id

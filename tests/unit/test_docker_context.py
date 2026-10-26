@@ -23,6 +23,17 @@ def test_dockerignore_excludes_sensitive_and_generated_paths() -> None:
         ".pytest_cache",
         ".mypy_cache",
         ".ruff_cache",
+        ".uv-cache",
+        ".deepeval",
+        ".test-tmp",
         "runs",
         "reports",
     } <= patterns
+
+
+def test_dockerfile_uses_production_dependencies_and_non_root_user() -> None:
+    """The runtime image must not include dev tooling or run as root."""
+    dockerfile = (PROJECT_ROOT / "Dockerfile").read_text(encoding="utf-8")
+
+    assert "uv sync --frozen --no-dev" in dockerfile
+    assert "USER appuser" in dockerfile
