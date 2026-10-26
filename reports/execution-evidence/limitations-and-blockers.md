@@ -64,11 +64,11 @@ Commits: `bd9ec57` (pushed to origin/main), `435e82c` (pinned evaluation steps, 
 | Blocker | Exact next action |
 |---|---|
 | (1) Judge variability | Acceptable for gate design; optionally pin a judge seed/temperature if supported. Requires a deliberate follow-up commit. |
-| (2) Cost | Only actionable if NVIDIA returns usage-based cost data; otherwise permanently out of scope. |
-| (3) schema_version | Add an explicit `schema_version` field to `EvaluationReport` in a follow-up commit. |
-| (4) KeyError 'score' | Short-term: retry. Longer-term: wrap judge parsing in a bounded retry at the metric layer so a single malformed judge response does not abort the whole run. |
+| (2) Cost | RESOLVED in follow-up: the client captures `usage.cost` when the provider attaches a figure; the NVIDIA endpoint provides none, so `total_cost_usd` stays explicit `null`. |
+| (3) schema_version | RESOLVED in follow-up: `EvaluationReport.schema_version` (default 1) is persisted in report JSON; older reports load via the default. |
+| (4) KeyError 'score' | RESOLVED in follow-up: bounded judge-parse retry at the metric layer (3 attempts, reraise; redone from scratch, never clamped). Root cause: DeepEval 4.1.10 GEval fallback `extract_json` raises bare KeyError on judge JSON missing `score`. |
 | (5) Timeout default | Consider making 60s the documented default if the provider remains slow. Transport-only, no hash impact. |
 | (6) Ruff format drift | Separate housekeeping commit with repo-wide formatting only, outside evaluation work. |
-| (7) Symlink skip | Windows-only environmental skip. No action required; suppressible via pytest skip annotations. |
-| Calibration BLOCKED | A human reviewer must fill `card_pin_inclusion_review.csv` (decision, primary_intent, rationale, reviewer_id, reviewed_at) from their own PIN-and-intent review of the 100-case calibration sample. Until then no one — reviewer, automation, or AI — may fill reviewer_id or reviewed_at. Only after a complete human review: deterministic manifest regeneration, then annotation, then calibration. |
-| `435e82c` unpushed | Push to origin/main explicitly once reviewed. |
+| (7) Symlink skip | Windows-only environmental skip. No action required. |
+| Calibration BLOCKED | UPDATE: review round 1 complete (reviewer 1, 2026-10-26T14:00:00+05:30): banking77-test-0553 and 0524 excluded. Manifest regenerated deterministically; replacements banking77-test-1247 and banking77-test-0540 are pending human review in `card_pin_inclusion_review.csv`. Accuracy of the manifest approval gate is unchanged: it stays blocked until those two replacement cases record decisions, then annotation and calibration can proceed. |
+| `435e82c` unpushed | RESOLVED: pushed to origin/main together with the evidence-bundle commit and follow-ups. |
