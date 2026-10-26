@@ -1,0 +1,20 @@
+{
+  "version": "v1",
+  "generated_at": "2026-10-26T10:31:06.994294+00:00",
+  "rubric_version": "v1",
+  "rubric_sha256": "7ef7ca7fdfc4703c97ea933f9c5aa7a6afb0d658f647ce2e4ed2aaac2637b1d5",
+  "manifest_sha256": "fda25cc4ba55420dae405edbbac4b5c46e11db6abb05da203fc5ee96d7b166cd",
+  "candidate_run_ids": [
+    "9921a945-8359-4003-8c39-cdd2636dcb28",
+    "9b4e1405-df0c-4e2a-ad38-d903783ba538"
+  ],
+  "primary_packet": {
+    "path": "dataset/calibration/v1/annotation_packets/primary_packet.csv",
+    "cases": 100
+  },
+  "secondary_packet": {
+    "path": "dataset/calibration/v1/annotation_packets/secondary_packet.csv",
+    "cases": 20,
+    "note": "Secondary annotator works independently; packet content identical in structure and shares no other annotator's answers."
+  }
+}
