@@ -9,6 +9,7 @@ from promptguard.domain.metrics import SummaryMetric
 from promptguard.infrastructure.evaluation.nvidia_judge import NVIDIAJudge
 from promptguard.infrastructure.evaluation.rubric import (
     SUMMARY_QUALITY_CRITERIA,
+    SUMMARY_QUALITY_EVALUATION_STEPS,
 )
 
 
@@ -20,6 +21,7 @@ class DeepEvalSummaryMetric(SummaryMetric):
         self._metric = GEval(
             name="Summary Quality",
             criteria=SUMMARY_QUALITY_CRITERIA,
+            evaluation_steps=list(SUMMARY_QUALITY_EVALUATION_STEPS),
             evaluation_params=[
                 SingleTurnParams.EXPECTED_OUTPUT,
                 SingleTurnParams.ACTUAL_OUTPUT,
@@ -59,7 +61,5 @@ class DeepEvalSummaryMetric(SummaryMetric):
             or not math.isfinite(score)
             or not 0 <= score <= 1
         ):
-            raise ValueError(
-                "DeepEval score must be a finite number between 0 and 1."
-            )
+            raise ValueError("DeepEval score must be a finite number between 0 and 1.")
         return 1.0 + (4.0 * float(score))

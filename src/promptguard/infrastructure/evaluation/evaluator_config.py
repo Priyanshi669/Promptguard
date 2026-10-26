@@ -5,9 +5,9 @@ from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
 from promptguard.config import Settings
+from promptguard.infrastructure.evaluation import rubric as rubric_module
 from promptguard.infrastructure.evaluation.rubric import (
     SUMMARY_QUALITY_RUBRIC_VERSION,
-    summary_quality_rubric_sha256,
 )
 
 JUDGE_METRIC_NAME = "deepeval-geval-summary-quality"
@@ -32,6 +32,10 @@ def build_evaluator_config(settings: Settings) -> dict[str, Any]:
         "judge_base_url": str(base_url).rstrip("/"),
         "judge_metric": JUDGE_METRIC_NAME,
         "judge_rubric_version": SUMMARY_QUALITY_RUBRIC_VERSION,
-        "judge_rubric_sha256": summary_quality_rubric_sha256(),
+        "judge_rubric_sha256": rubric_module.summary_quality_rubric_sha256(),
+        "evaluation_steps": list(rubric_module.SUMMARY_QUALITY_EVALUATION_STEPS),
+        "evaluation_steps_sha256": (
+            rubric_module.summary_quality_evaluation_steps_sha256()
+        ),
         "deepeval_version": deepeval_version(),
     }
