@@ -1,3 +1,5 @@
 id,source_category,source_input,decision,primary_intent,rationale,reviewer_id,reviewed_at
-banking77-test-0553,pin_blocked,How do I reset my PIN?,,,,,
-banking77-test-0524,pin_blocked,I accidentally blocked my PIN. How do I reset it?,,,,,
+banking77-test-0553,pin_blocked,How do I reset my PIN?,exclude,PIN-reset,"Reviewed by reviewer 1. The input asks how to reset a PIN, which is a PIN-reset intent rather than a card PIN delivery or receipt issue.",1,2026-10-26T14:00:00+05:30
+banking77-test-0524,pin_blocked,I accidentally blocked my PIN. How do I reset it?,exclude,PIN-recovery,"Reviewed by reviewer 1. The input describes a blocked PIN and asks how to reset it, which is a PIN-recovery intent rather than a card PIN delivery or receipt issue.",1,2026-10-26T14:00:00+05:30
+banking77-test-1247,get_physical_card,How do I find my card PIN?,,,,,
+banking77-test-0540,pin_blocked,I'v exhausted all the of times I can try my PIN,,,,,

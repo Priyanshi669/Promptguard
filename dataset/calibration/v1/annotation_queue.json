@@ -1,7 +1,7 @@
 {
   "version": "v1",
   "status": "provisional_card_pin_pending_review",
-  "manifest_sha256": "85e64afa2e50399eaebaad33d05581094ce415587c2a0625ea71778addf25f53",
+  "manifest_sha256": "9100a2431327d830b3f334a844ec3647c6936338af1bf60832e943ed9ad87306",
   "rubric_version": "v1",
   "rubric_sha256": "7ef7ca7fdfc4703c97ea933f9c5aa7a6afb0d658f647ce2e4ed2aaac2637b1d5",
   "total_examples": 100,
@@ -122,7 +122,7 @@
       "category": "balance_not_updated_after_bank_transfer",
       "source_category": "balance_not_updated_after_bank_transfer",
       "source_input": "Why is my balance the same?  I processed a transfer.",
-      "audit": false,
+      "audit": true,
       "inclusion_status": "not_applicable"
     },
     {
@@ -351,20 +351,20 @@
       "inclusion_status": "not_applicable"
     },
     {
-      "id": "banking77-test-0553",
+      "id": "banking77-test-1247",
       "source_split": "test",
       "category": "card_pin",
-      "source_category": "pin_blocked",
-      "source_input": "How do I reset my PIN?",
-      "audit": true,
+      "source_category": "get_physical_card",
+      "source_input": "How do I find my card PIN?",
+      "audit": false,
       "inclusion_status": "pending_human_review"
     },
     {
-      "id": "banking77-test-0524",
+      "id": "banking77-test-0540",
       "source_split": "test",
       "category": "card_pin",
       "source_category": "pin_blocked",
-      "source_input": "I accidentally blocked my PIN. How do I reset it?",
+      "source_input": "I'v exhausted all the of times I can try my PIN",
       "audit": true,
       "inclusion_status": "pending_human_review"
     },

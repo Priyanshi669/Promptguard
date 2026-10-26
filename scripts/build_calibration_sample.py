@@ -14,6 +14,7 @@ SOURCE_PATH = Path("dataset/source/banking77/test.csv")
 GOLDEN_PATH = Path("dataset/v1/golden_dataset.json")
 PROMPT_PATH = Path("prompts/v1.yaml")
 OUTPUT_PATH = Path("dataset/calibration/v1/sample_manifest.json")
+REVIEW_PATH = Path("dataset/calibration/v1/card_pin_inclusion_review.csv")
 DEFAULT_SEED = "20261026"
 DEFAULT_PER_CATEGORY = 2
 
@@ -99,6 +100,37 @@ def load_golden_inputs(path: Path) -> set[str]:
     return inputs
 
 
+def load_card_pin_review(
+    path: Path,
+) -> tuple[set[str], set[str]]:
+    """Return human-excluded and human-included case ids from the review file.
+
+    Only rows with a decision plus a reviewer id and timestamp count as
+    human-verified; template rows with blank decision fields stay pending.
+    """
+    if not path.exists():
+        return set(), set()
+
+    with path.open("r", encoding="utf-8", newline="") as file:
+        rows = list(csv.DictReader(file))
+
+    excluded = {
+        row["id"]
+        for row in rows
+        if row.get("decision") == "exclude"
+        and row.get("reviewer_id", "").strip()
+        and row.get("reviewed_at", "").strip()
+    }
+    included = {
+        row["id"]
+        for row in rows
+        if row.get("decision") == "include"
+        and row.get("reviewer_id", "").strip()
+        and row.get("reviewed_at", "").strip()
+    }
+    return excluded, included
+
+
 def rank_key(seed: str, category: str, normalized_input: str) -> str:
     """Return a deterministic SHA-256 ranking key."""
     return hashlib.sha256(
@@ -127,8 +159,15 @@ def build_manifest(
     golden_inputs: set[str],
     seed: str,
     per_category: int,
+    excluded_ids: set[str],
+    included_ids: set[str],
 ) -> list[dict[str, object]]:
-    """Select a deterministic, stratified, unlabeled calibration sample."""
+    """Select a deterministic, stratified, unlabeled calibration sample.
+
+    Human-excluded ids are ineligible, so the ranked selection naturally
+    promotes the next-ranked eligible case in the same category and
+    length band without any manual indices.
+    """
     by_source_category: dict[str, list[dict[str, str]]] = defaultdict(list)
     for example in source_examples:
         by_source_category[example["source_category"]].append(example)
@@ -149,6 +188,7 @@ def build_manifest(
                 example
                 for example in candidates
                 if "pin" in example["normalized_input"]
+                and example["source_id"] not in excluded_ids
             ]
 
         if not candidates:
@@ -218,7 +258,11 @@ def build_manifest(
                 "length_band": band,
             }
             if category == "card_pin":
-                entry["inclusion_status"] = "pending_human_review"
+                entry["inclusion_status"] = (
+                    "included"
+                    if example["source_id"] in included_ids
+                    else "pending_human_review"
+                )
             selected.append(entry)
 
     return selected
@@ -271,11 +315,32 @@ def write_manifest(
     source_path: Path,
     golden_path: Path,
     prompt_path: Path,
-) -> None:
+) -> dict[str, object]:
     """Write the unlabeled sampling manifest."""
+    pending_categories = [
+        category
+        for category in SOURCE_CATEGORY_OVERRIDES
+        if any(
+            entry.get("inclusion_status") == "pending_human_review"
+            for entry in selected
+            if entry["category"] == category
+        )
+    ]
+    card_pin_entries = [
+        entry for entry in selected if entry["category"] == "card_pin"
+    ]
+    card_pin_reviewed = bool(card_pin_entries) and all(
+        entry.get("inclusion_status") == "included"
+        for entry in card_pin_entries
+    )
+    if card_pin_reviewed:
+        manifest_status = "approved"
+    else:
+        manifest_status = "provisional_card_pin_pending_review"
+
     payload = {
         "version": "v1",
-        "manifest_status": "provisional_card_pin_pending_review",
+        "manifest_status": manifest_status,
         "seed": seed,
         "source_path": source_path.as_posix(),
         "golden_dataset_path": golden_path.as_posix(),
@@ -284,7 +349,7 @@ def write_manifest(
             category: list(source_categories)
             for category, source_categories in SOURCE_CATEGORY_OVERRIDES.items()
         },
-        "pending_review_categories": ["card_pin"],
+        "pending_review_categories": pending_categories,
         "total_examples": len(selected),
         "examples": selected,
     }
@@ -292,6 +357,60 @@ def write_manifest(
     with output_path.open("w", encoding="utf-8") as file:
         json.dump(payload, file, indent=2, ensure_ascii=False)
         file.write("\n")
+    return payload
+
+
+def append_pending_review_rows(
+    review_path: Path,
+    selected: list[dict[str, object]],
+) -> list[str]:
+    """Append blank-decision review rows for any yet-unreviewed card_pin case.
+
+    Existing rows are preserved verbatim; only template rows with blank
+    human decision fields are added, keeping the file a human record.
+    """
+    fields = [
+        "id",
+        "source_category",
+        "source_input",
+        "decision",
+        "primary_intent",
+        "rationale",
+        "reviewer_id",
+        "reviewed_at",
+    ]
+    if not any(entry["category"] == "card_pin" for entry in selected):
+        return []
+
+    existing: dict[str, dict[str, str]] = {}
+    if review_path.exists():
+        with review_path.open("r", encoding="utf-8", newline="") as file:
+            for row in csv.DictReader(file):
+                existing[row["id"]] = row
+
+    appended: list[str] = []
+    for entry in selected:
+        if entry["category"] != "card_pin":
+            continue
+        entry_id = str(entry["id"])
+        if entry_id in existing:
+            continue
+        row = {field: "" for field in fields}
+        row["id"] = entry_id
+        row["source_category"] = str(entry["source_category"])
+        row["source_input"] = str(entry["source_input"])
+        existing[entry_id] = row
+        appended.append(entry_id)
+
+    if not appended:
+        return []
+
+    with review_path.open("w", encoding="utf-8", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        for row in existing.values():
+            writer.writerow(row)
+    return appended
 
 
 def main() -> None:
@@ -314,15 +433,18 @@ def main() -> None:
     categories = load_prompt_categories(args.prompt)
     source_examples = load_source_examples(args.source)
     golden_inputs = load_golden_inputs(args.golden)
+    excluded_ids, included_ids = load_card_pin_review(REVIEW_PATH)
     selected = build_manifest(
         source_examples,
         categories,
         golden_inputs,
         args.seed,
         args.per_category,
+        excluded_ids,
+        included_ids,
     )
     validate_manifest(selected, categories, args.per_category)
-    write_manifest(
+    manifest = write_manifest(
         args.output,
         selected,
         args.seed,
@@ -330,10 +452,15 @@ def main() -> None:
         args.golden,
         args.prompt,
     )
+    appended = append_pending_review_rows(REVIEW_PATH, selected)
 
     print(f"Categories: {len(categories)}")
     print(f"Examples: {len(selected)}")
     print(f"Manifest: {args.output}")
+    print(f"Manifest status: {manifest['manifest_status']}")
+    print(f"Pending review categories: {manifest['pending_review_categories']}")
+    if appended:
+        print(f"New card_pin review rows: {', '.join(appended)}")
 
 
 if __name__ == "__main__":

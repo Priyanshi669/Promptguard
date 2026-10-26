@@ -359,22 +359,22 @@
       "length_band": "long"
     },
     {
-      "id": "banking77-test-0553",
+      "id": "banking77-test-1247",
       "source_split": "test",
       "category": "card_pin",
-      "source_category": "pin_blocked",
-      "source_input": "How do I reset my PIN?",
-      "word_count": 6,
+      "source_category": "get_physical_card",
+      "source_input": "How do I find my card PIN?",
+      "word_count": 7,
       "length_band": "short",
       "inclusion_status": "pending_human_review"
     },
     {
-      "id": "banking77-test-0524",
+      "id": "banking77-test-0540",
       "source_split": "test",
       "category": "card_pin",
       "source_category": "pin_blocked",
-      "source_input": "I accidentally blocked my PIN. How do I reset it?",
-      "word_count": 10,
+      "source_input": "I'v exhausted all the of times I can try my PIN",
+      "word_count": 11,
       "length_band": "long",
       "inclusion_status": "pending_human_review"
     },

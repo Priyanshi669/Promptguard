@@ -1,6 +1,29 @@
 # card_pin coverage review
 
-Status: **blocked pending human inclusion review**
+Status: **round 1 reviewed (both selected cases excluded); replacements
+pending human inclusion review**
+
+## Review round 1 outcome
+
+Reviewer 1 (reviewed 2026-10-26T14:00:00+05:30) applied the
+human-reviewed inclusion criteria below to the two manifest cases:
+
+- `banking77-test-0553` — **exclude**, primary intent recorded as
+  PIN-reset (blocked/reset PIN is out of scope).
+- `banking77-test-0524` — **exclude**, primary intent recorded as
+  PIN-recovery (blocked/reset PIN is out of scope).
+
+Both decisions and rationales are recorded in
+`v1/card_pin_inclusion_review.csv`. The manifest was regenerated
+deterministically; the excluded cases were replaced by the next-ranked
+eligible cases in the same category and length band:
+
+- `banking77-test-1247` (short band): "How do I find my card PIN?"
+- `banking77-test-0540` (long band): "I'v exhausted all the of times I
+  can try my PIN"
+
+These replacement cases are pending human review in the same review
+file. Do not annotate them until reviewer 1 records decisions.
 
 ## Question
 

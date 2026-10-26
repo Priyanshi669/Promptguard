@@ -227,8 +227,8 @@ def test_double_annotation_ids_are_reproducible_and_unlabeled() -> None:
         (CALIBRATION_DIR / "sample_manifest.json").read_bytes()
     ).hexdigest()
     assert audit["pending_review_ids"] == [
-        "banking77-test-0553",
-        "banking77-test-0524",
+        "banking77-test-1247",
+        "banking77-test-0540",
     ]
     assert all(
         "human_score" not in example
@@ -237,10 +237,10 @@ def test_double_annotation_ids_are_reproducible_and_unlabeled() -> None:
 
 
 def test_manifest_validation_records_the_blocking_issue() -> None:
-    """Structural checks should pass while semantic card_pin review blocks."""
+    """Structural checks should pass while semantic card_pin review is pending."""
     report = load_json(CALIBRATION_DIR / "manifest_validation.json")
 
-    assert report["status"] == "structural_pass_semantic_blocked"
+    assert report["status"] == "provisional_awaiting_card_pin_include_review"
     assert all(report["checks"].values())
     assert report["rubric_sha256"] == summary_quality_rubric_sha256()
     assert report["manifest_sha256"] == hashlib.sha256(
@@ -250,7 +250,7 @@ def test_manifest_validation_records_the_blocking_issue() -> None:
 
 
 def test_card_pin_review_documents_the_mapping_limitation() -> None:
-    """The review should block exact-label treatment until a human decides."""
+    """Round-1 human decisions must be recorded; new cases stay pending."""
     review = (CALIBRATION_DIR / "card_pin_coverage_review.md").read_text(
         encoding="utf-8"
     )
@@ -272,18 +272,39 @@ def test_card_pin_review_documents_the_mapping_limitation() -> None:
         rows = list(reader)
         fields = set(reader.fieldnames or [])
 
-    assert len(rows) == 2
     assert {row["id"] for row in rows} == {
         "banking77-test-0553",
         "banking77-test-0524",
+        "banking77-test-1247",
+        "banking77-test-0540",
     }
+
+    round_one = [
+        row
+        for row in rows
+        if row["id"] in ("banking77-test-0553", "banking77-test-0524")
+    ]
+    assert all(
+        row["decision"] == "exclude"
+        and row["rationale"].startswith("Reviewed by reviewer 1.")
+        and row["reviewer_id"] == "1"
+        and row["reviewed_at"]
+        for row in round_one
+    )
+    assert len(round_one) == 2
+
+    pending_rows = [
+        row for row in rows if row["id"] in {
+            "banking77-test-1247",
+            "banking77-test-0540",
+        }
+    ]
+    assert len(pending_rows) == 2
     assert all(
         row["decision"] == ""
-        and row["primary_intent"] == ""
-        and row["rationale"] == ""
         and row["reviewer_id"] == ""
         and row["reviewed_at"] == ""
-        for row in rows
+        for row in pending_rows
     )
     assert {
         "id",

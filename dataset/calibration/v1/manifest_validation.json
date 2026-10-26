@@ -1,8 +1,8 @@
 {
   "manifest_path": "dataset/calibration/v1/sample_manifest.json",
-  "manifest_sha256": "85e64afa2e50399eaebaad33d05581094ce415587c2a0625ea71778addf25f53",
-  "validated_at": "2026-10-26T05:14:54.567956+00:00",
-  "status": "structural_pass_semantic_blocked",
+  "manifest_sha256": "9100a2431327d830b3f334a844ec3647c6936338af1bf60832e943ed9ad87306",
+  "validated_at": "2026-10-26T09:14:39.763775+00:00",
+  "status": "provisional_awaiting_card_pin_include_review",
   "checks": {
     "total_examples_100": true,
     "unique_ids": true,
@@ -15,10 +15,10 @@
     "card_pin_pending_review": true
   },
   "blocking_issues": [
-    "card_pin has no exact BANKING77 label.",
-    "get_physical_card and pin_blocked are not interchangeable.",
-    "The current card_pin cases are pin_blocked reset cases and are not validated.",
-    "Human inclusion review and manifest replacement are required before annotation."
+    "card_pin has no exact BANKING77 label; per-case human inclusion review remains in progress.",
+    "Review round 1 (reviewer_id=1, reviewed_at=2026-10-26T14:00:00+05:30) excluded banking77-test-0524, banking77-test-0553.",
+    "Replacement cases banking77-test-1247 and banking77-test-0540 were selected deterministically and are pending human review.",
+    "Manifest approval and candidate generation stay blocked until each card_pin case in the manifest records a human decision."
   ],
   "rubric_version": "v1",
   "rubric_sha256": "7ef7ca7fdfc4703c97ea933f9c5aa7a6afb0d658f647ce2e4ed2aaac2637b1d5"

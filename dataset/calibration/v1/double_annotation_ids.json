@@ -2,7 +2,7 @@
   "version": "v1",
   "seed": "20261026",
   "selection": "first 20 ids ranked by sha256(seed + NUL + 'audit' + NUL + id)",
-  "manifest_sha256": "85e64afa2e50399eaebaad33d05581094ce415587c2a0625ea71778addf25f53",
+  "manifest_sha256": "9100a2431327d830b3f334a844ec3647c6936338af1bf60832e943ed9ad87306",
   "count": 20,
   "ids": [
     "banking77-test-2971",
@@ -12,7 +12,6 @@
     "banking77-test-0346",
     "banking77-test-2719",
     "banking77-test-2130",
-    "banking77-test-0553",
     "banking77-test-3051",
     "banking77-test-2299",
     "banking77-test-1757",
@@ -20,11 +19,12 @@
     "banking77-test-1130",
     "banking77-test-1051",
     "banking77-test-1680",
+    "banking77-test-0540",
     "banking77-test-2751",
     "banking77-test-1797",
     "banking77-test-2787",
-    "banking77-test-0524",
-    "banking77-test-0679"
+    "banking77-test-0679",
+    "banking77-test-2703"
   ],
   "examples": [
     {
@@ -63,11 +63,6 @@
       "source_category": "change_pin"
     },
     {
-      "id": "banking77-test-0553",
-      "category": "card_pin",
-      "source_category": "pin_blocked"
-    },
-    {
       "id": "banking77-test-3051",
       "category": "country_support",
       "source_category": "country_support"
@@ -103,6 +98,11 @@
       "source_category": "lost_or_stolen_phone"
     },
     {
+      "id": "banking77-test-0540",
+      "category": "card_pin",
+      "source_category": "pin_blocked"
+    },
+    {
       "id": "banking77-test-2751",
       "category": "cash_withdrawal_not_recognised",
       "source_category": "cash_withdrawal_not_recognised"
@@ -118,19 +118,19 @@
       "source_category": "exchange_charge"
     },
     {
-      "id": "banking77-test-0524",
-      "category": "card_pin",
-      "source_category": "pin_blocked"
-    },
-    {
       "id": "banking77-test-0679",
       "category": "pending_top_up",
       "source_category": "pending_top_up"
+    },
+    {
+      "id": "banking77-test-2703",
+      "category": "balance_not_updated_after_bank_transfer",
+      "source_category": "balance_not_updated_after_bank_transfer"
     }
   ],
   "status": "provisional_card_pin_pending_review",
   "pending_review_ids": [
-    "banking77-test-0553",
-    "banking77-test-0524"
+    "banking77-test-1247",
+    "banking77-test-0540"
   ]
 }
