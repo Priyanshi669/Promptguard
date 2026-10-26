@@ -43,7 +43,9 @@ build/
 # Local data
 data/
 runs/
-reports/
+reports/*
+!reports/execution-evidence
+
 .test-tmp/
 .uv-cache/
 .deepeval/

@@ -1,0 +1,4 @@
+Command: uv lock --check
+Exit status: 0
+Output:
+  Resolved 90 packages in 1ms (no updates needed)

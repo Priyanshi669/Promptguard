@@ -1,0 +1,42 @@
+PromptGuard Evaluation Report
+Run ID: bf766263-2be2-406c-9cf8-c6ffd2451ab3
+Timestamp: 2026-10-26T08:37:19.197789+00:00
+Prompt version: v1
+Model: nvidia/nemotron-3-ultra-550b-a55b
+Dataset: golden-v1
+Cases evaluated: 10
+Category accuracy: 80.00%
+Average summary score: 4.56/5
+Average latency: 3509.07ms
+Input tokens: 5397
+Output tokens: 1625
+Eval config hash: aafd707c401b07889b6000e07b52a76c0c2c4e2a79d9dc32ed927265d5234868
+Gate thresholds:
+  maximum_category_accuracy_drop: 0.05
+  maximum_summary_score_drop: 0.5
+Baseline run: 44af1572-2146-4497-91fa-55252b48499f
+Comparison deltas:
+  Category accuracy: +0.00% (baseline 80.00%, current 80.00%)
+  Average summary score: -0.04 (baseline 4.60, current 4.56)
+  Average latency: -2252.62ms (baseline 5761.68ms, current 3509.07ms)
+  Input tokens: +0 (baseline 5397, current 5397)
+  Output tokens: +122 (baseline 1503, current 1625)
+Category drift (total variation): 0.0000
+Regression status: PASS
+Threshold violations: none
+Individual failures: 2
+  Test case: banking77-007
+    Expected category: balance_not_updated_after_bank_transfer
+    Actual category: pending_transfer
+    Expected summary: The customer asks about the typical time frame for a UK account transfer and is concerned because a recent transfer has not appeared yet.
+    Actual summary: Customer asking about typical UK account transfer time frame; recent transfer not showing up and wants confirmation it's processing correctly.
+    Summary score: 4.20
+  Test case: banking77-009
+    Expected category: beneficiary_not_allowed
+    Actual category: failed_transfer
+    Expected summary: The customer is unable to complete a money transfer, having tried multiple times, and each attempt results in an error message.
+    Actual summary: Customer reports repeated transfer attempts failing with error messages.
+    Summary score: 5.00
+
+---
+Exit code: 0 (PASS). Captured verbatim from the live CLI run on 2026-10-26.

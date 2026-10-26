@@ -1,0 +1,37 @@
+PromptGuard Evaluation Report
+Run ID: 44af1572-2146-4497-91fa-55252b48499f
+Timestamp: 2026-10-26T08:24:03.126868+00:00
+Prompt version: v1
+Model: nvidia/nemotron-3-ultra-550b-a55b
+Dataset: golden-v1
+Cases evaluated: 10
+Category accuracy: 80.00%
+Average summary score: 4.60/5
+Average latency: 5761.68ms
+Input tokens: 5397
+Output tokens: 1503
+Eval config hash: aafd707c401b07889b6000e07b52a76c0c2c4e2a79d9dc32ed927265d5234868
+Regression status: INCONCLUSIVE
+  Incompatibility: No thresholds configured and no baseline provided
+Threshold violations: none
+Individual failures: 2
+  Test case: banking77-007
+    Expected category: balance_not_updated_after_bank_transfer
+    Actual category: pending_transfer
+    Expected summary: The customer asks about the typical time frame for a UK account transfer and is concerned because a recent transfer has not appeared yet.
+    Actual summary: Customer inquires about the normal time frame for a UK account transfer and reports that their recent transfer is not showing up anywhere, seeking reassurance that everything is okay.
+    Summary score: 5.00
+  Test case: banking77-009
+    Expected category: beneficiary_not_allowed
+    Actual category: failed_transfer
+    Expected summary: The customer is unable to complete a money transfer, having tried multiple times, and each attempt results in an error message.
+    Actual summary: Customer reports multiple transfer attempts failing with error messages.
+    Summary score: 5.00
+
+---
+Note: this text was regenerated deterministically from the persisted
+report at runs/44af1572-2146-4497-91fa-55252b48499f.json using
+TextReportFormatter().format(), which is the same formatter the CLI
+uses for terminal output. The original live stdout was not captured
+verbatim because the CLI writes to a console that could not be
+piped without losing formatting.

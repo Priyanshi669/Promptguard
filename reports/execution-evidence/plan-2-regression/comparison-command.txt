@@ -1,0 +1,15 @@
+# Plan 2 comparison command (no intentional changes vs. Plan 1 baseline)
+
+# First attempt (INCONCLUSIVE because no drop thresholds were provided):
+uv run promptguard --limit 10 --baseline 44af1572-2146-4497-91fa-55252b48499f
+
+# Final attempt (decisive gate; explicit thresholds):
+$env:NVIDIA_REQUEST_TIMEOUT_SECONDS = '60'
+uv run promptguard --limit 10 --baseline 44af1572-2146-4497-91fa-55252b48499f --max-category-accuracy-drop 0.05 --max-summary-score-drop 0.5
+
+# Notes:
+# - The baseline run id is passed explicitly (never "latest", to avoid any
+#   uncertainty about which run is being compared).
+# - NVIDIA_REQUEST_TIMEOUT_SECONDS was raised from the default 10s to 60s.
+#   It is a transport-only setting and is not part of eval_config_hash, so
+#   baseline compatibility is unaffected.

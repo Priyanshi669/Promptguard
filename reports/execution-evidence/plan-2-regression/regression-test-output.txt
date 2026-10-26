@@ -1,0 +1,32 @@
+Controlled-regression proof of the fail path (automated integration test):
+
+Command:
+  uv run pytest tests/integration/test_pipeline.py::test_baseline_regression_detects_new_failure_and_drift -q
+
+Output:
+  .                                                                        [100%]Running teardown with pytest sessionfinish...
+
+  1 passed in 0.19s
+
+What the test asserts (src: tests/integration/test_pipeline.py:135-194):
+  - A degraded candidate (one test case forced to answer the wrong
+    category) is compared against a healthy scripted baseline.
+  - outcome.comparison.category_accuracy_delta == -0.2
+  - outcome.report.drift.sufficient_data is True and
+    total_variation_distance == 0.2
+  - outcome.report.regression.status == "FAIL"
+  - a threshold violation with metric "category_accuracy_drop_pct"
+    is present
+  - a case_regressions entry for the degraded case has status
+    "new_failure"
+
+Healthy-path assertion (same file, earlier test):
+  assert "Regression status: PASS" in recording_notifier.messages[0]
+
+Full pipeline test module:
+  uv run pytest tests/integration/test_pipeline.py -q
+  5 passed in 0.33s
+
+The regression gate was also exercised against two live runs without
+intentional changes (see comparison-output.txt): status PASS, per-case
+statuses unchanged_pass x8 / unchanged_failure x2.

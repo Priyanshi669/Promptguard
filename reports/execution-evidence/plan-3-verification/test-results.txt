@@ -1,0 +1,8 @@
+Command: uv run pytest -q
+Exit status: 0
+Output:
+  377 passed, 1 skipped (12.25s)
+
+Skip (pre-existing, not a regression):
+  tests/unit/test_path_safety.py::test_resolve_identifier_path_rejects_symlink_escape
+  Reason: symlink creation not permitted on this Windows environment

@@ -1,0 +1,9 @@
+Command: uv run ruff check src tests scripts
+Exit status: 0
+Output:
+  All checks passed!
+
+Note: `ruff format --check` is NOT part of the documented gate and
+still fails on ~43 pre-existing files unrelated to this work. A
+mass-format attempt earlier in this effort was manually reverted; no
+formatting sweep is included here.
