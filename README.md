@@ -97,8 +97,8 @@ when aggregate metrics and baseline comparisons pass.
 
 The Docker build context is filtered by `.dockerignore`; local `.env`
 files, VCS data, virtual environments, caches, runs, and reports are not
-copied into the image. The runtime image installs production dependencies
-only and runs as the unprivileged `appuser`.
+copied into the image. The runtime image installs the production dependency
+set without the dev dependency group and runs as the unprivileged `appuser`.
 
 Set `NVIDIA_TEMPERATURE` and `NVIDIA_SEED` in `.env` to make generation
 and judging reproducible (both are optional).

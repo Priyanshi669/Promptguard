@@ -33,7 +33,15 @@ class JsonEvaluationRunRepository(EvaluationRunRepository):
         if not path.exists():
             raise FileNotFoundError(f"Evaluation run not found: {run_id}")
         try:
-            return EvaluationReport.model_validate_json(path.read_text(encoding="utf-8"))
+            report = EvaluationReport.model_validate_json(
+                path.read_text(encoding="utf-8"),
+            )
+            if report.run_id != run_id:
+                raise ValueError(
+                    f"Embedded run ID {report.run_id!r} does not match "
+                    f"filename {path.name!r}."
+                )
+            return report
         except (json.JSONDecodeError, ValueError) as exc:
             raise ValueError(f"Invalid evaluation run: {run_id}") from exc
 

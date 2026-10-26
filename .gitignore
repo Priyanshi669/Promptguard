@@ -45,3 +45,5 @@ data/
 runs/
 reports/
 .test-tmp/
+.uv-cache/
+.deepeval/

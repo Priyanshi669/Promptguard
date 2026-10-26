@@ -114,6 +114,24 @@ class EvaluationResult(BaseModel):
                 issues.append(f"{field_name} must be a non-empty string")
         return issues
 
+    def category_issues(self) -> list[str]:
+        """Return violations of category-match consistency."""
+        if not isinstance(self.expected_category, str):
+            return []
+        if not isinstance(self.normalized_category, str):
+            return []
+        if not isinstance(self.actual_category, str):
+            return []
+        normalized = (
+            self.normalized_category or self.actual_category
+        ).strip().lower()
+        expected = self.expected_category.strip().lower()
+        if self.category_match != (normalized == expected):
+            return [
+                "category_match must agree with normalized_category and expected_category"
+            ]
+        return []
+
     def metric_issues(self) -> list[str]:
         """Return violations of finite and range metric invariants."""
         issues: list[str] = []
@@ -132,6 +150,14 @@ class EvaluationResult(BaseModel):
         """Backfill normalized_category from actual_category when unset."""
         if not self.normalized_category:
             self.normalized_category = self.actual_category
+        return self
+
+    @model_validator(mode="after")
+    def _validate_category_consistency(self) -> "EvaluationResult":
+        """Reject contradictory category-match evidence."""
+        issues = self.category_issues()
+        if issues:
+            raise ValueError("; ".join(issues))
         return self
 
     @model_validator(mode="after")
@@ -302,6 +328,10 @@ class EvaluationReport(BaseModel):
                     issues.append(f"Comparison has a blank {field_name}.")
         for index, result in enumerate(self.results):
             for issue in result.text_issues():
+                issues.append(
+                    f"Result {index} ({result.test_case_id}): {issue}."
+                )
+            for issue in result.category_issues():
                 issues.append(
                     f"Result {index} ({result.test_case_id}): {issue}."
                 )

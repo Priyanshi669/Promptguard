@@ -14,7 +14,10 @@ from promptguard.application.comparison_service import (
 from promptguard.application.drift_service import DriftService
 from promptguard.application.reporting_service import ReportingService
 from promptguard.domain.models import EvaluationReport, EvaluationResult
-from promptguard.domain.thresholds import RegressionThresholds
+from promptguard.domain.thresholds import (
+    RegressionThresholds,
+    ThresholdViolation,
+)
 from promptguard.infrastructure.persistence.repositories import (
     JsonEvaluationRunRepository,
 )
@@ -344,6 +347,21 @@ class TestThresholds:
 
         assert decision.status == "INCONCLUSIVE"
         assert any("actual_summary" in reason
+                   for reason in decision.incompatibility_reasons)
+        assert _exit_code_for(built) == 2
+
+    def test_mutated_category_match_cannot_pass_gate(self) -> None:
+        """A contradictory category match cannot produce PASS."""
+        built = report(results(1, 1))
+        built.results[0].category_match = False
+        decision = RegressionService().evaluate(
+            built,
+            RegressionThresholds(minimum_category_accuracy=0.0),
+        )
+        built.regression = decision
+
+        assert decision.status == "INCONCLUSIVE"
+        assert any("category_match" in reason
                    for reason in decision.incompatibility_reasons)
         assert _exit_code_for(built) == 2
 
@@ -810,6 +828,8 @@ class TestCriticalCaseVeto:
         """Critical failures must not depend on baseline regression tracking."""
         critical_failure = results(1, 1)[0].model_copy(update={
             "test_case_id": "critical-case",
+            "actual_category": "technical",
+            "normalized_category": "technical",
             "category_match": False,
             "critical": True,
         })
@@ -828,6 +848,8 @@ class TestCriticalCaseVeto:
         """A critical failure is itself sufficient evidence for FAIL."""
         critical_failure = results(1, 1)[0].model_copy(update={
             "test_case_id": "critical-case",
+            "actual_category": "technical",
+            "normalized_category": "technical",
             "category_match": False,
             "critical": True,
         })
@@ -964,6 +986,64 @@ class TestJsonPersistence:
 
         with pytest.raises(ValueError, match="Invalid evaluation run"):
             repository.get("blank")
+
+    def test_get_rejects_embedded_run_id_mismatch(
+        self, tmp_path: Path,
+    ) -> None:
+        """A report's identity must match the filename used to load it."""
+        repository = JsonEvaluationRunRepository(tmp_path)
+        saved = report(results(1, 1))
+        repository.save(saved)
+        path = tmp_path / f"{saved.run_id}.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["run_id"] = "different-id"
+        path.write_text(json.dumps(data), encoding="utf-8")
+
+        with pytest.raises(ValueError, match="Invalid evaluation run"):
+            repository.get(saved.run_id)
+
+    def test_save_rejects_tampered_comparison(
+        self, tmp_path: Path,
+    ) -> None:
+        """Persistence must reject comparison arithmetic that was altered."""
+        repository = JsonEvaluationRunRepository(tmp_path)
+        baseline = report(results(1, 1))
+        current = report(results(1, 1))
+        current.baseline_run_id = baseline.run_id
+        comparison = ComparisonService().compare(baseline, current)
+        comparison.category_accuracy_delta = 0.99
+        current.comparison = comparison
+
+        with pytest.raises(ValidationError):
+            repository.save(current)
+
+        assert not (tmp_path / f"{current.run_id}.json").exists()
+
+    def test_save_rejects_contradictory_regression(
+        self, tmp_path: Path,
+    ) -> None:
+        """Persistence must reject PASS decisions with failure evidence."""
+        repository = JsonEvaluationRunRepository(tmp_path)
+        current = report(results(1, 1))
+        decision = RegressionService().evaluate(
+            current,
+            RegressionThresholds(minimum_category_accuracy=0.0),
+        )
+        decision.violations.append(
+            ThresholdViolation(
+                metric="category_accuracy",
+                actual_value=0.0,
+                threshold=1.0,
+                direction="below",
+                message="bad",
+            )
+        )
+        current.regression = decision
+
+        with pytest.raises(ValidationError):
+            repository.save(current)
+
+        assert not (tmp_path / f"{current.run_id}.json").exists()
 
     def test_corrupted_json_is_skipped_by_list_runs(self, tmp_path: Path) -> None:
         repository = JsonEvaluationRunRepository(tmp_path)

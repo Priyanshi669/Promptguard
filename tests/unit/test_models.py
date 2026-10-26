@@ -12,8 +12,14 @@ from promptguard.domain.models import (
     LLMOutput,
     LLMResponse,
 )
-from promptguard.domain.regression import EvaluationComparison
-from promptguard.domain.thresholds import RegressionThresholds
+from promptguard.domain.regression import (
+    EvaluationComparison,
+    RegressionResult,
+)
+from promptguard.domain.thresholds import (
+    RegressionThresholds,
+    ThresholdViolation,
+)
 
 
 def test_valid_llm_output():
@@ -295,6 +301,53 @@ def test_comparison_rejects_blank_run_ids() -> None:
 
     with pytest.raises(ValidationError):
         EvaluationComparison.model_validate(payload)
+
+
+def test_comparison_rejects_tampered_delta() -> None:
+    """Persisted comparison deltas must match their source metrics."""
+    comparison = ComparisonService().compare(
+        build_report(), build_report(),
+    )
+    payload = comparison.model_dump()
+    payload["category_accuracy_delta"] = 0.99
+
+    with pytest.raises(ValidationError, match="category_accuracy_delta"):
+        EvaluationComparison.model_validate(payload)
+
+
+def test_result_rejects_contradictory_category_match() -> None:
+    """A result cannot claim a match that its categories contradict."""
+    with pytest.raises(ValidationError, match="category_match"):
+        EvaluationResult(
+            test_case_id="TC-001",
+            expected_category="billing",
+            actual_category="technical",
+            expected_summary="expected",
+            actual_summary="actual",
+            category_match=True,
+            summary_score=4.0,
+            latency_ms=1.0,
+            input_tokens=1,
+            output_tokens=1,
+        )
+
+
+def test_regression_rejects_pass_with_violations() -> None:
+    """A PASS decision cannot contain contradictory failure evidence."""
+    with pytest.raises(ValidationError, match="PASS"):
+        RegressionResult(
+            status="PASS",
+            violations=[
+                ThresholdViolation(
+                    metric="category_accuracy",
+                    actual_value=0.0,
+                    threshold=1.0,
+                    direction="below",
+                    message="bad",
+                )
+            ],
+            critical_case_failure=True,
+        )
 
 
 def test_thresholds_reject_infinite_latency() -> None:
