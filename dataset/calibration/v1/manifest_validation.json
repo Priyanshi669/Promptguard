@@ -1,0 +1,25 @@
+{
+  "manifest_path": "dataset/calibration/v1/sample_manifest.json",
+  "manifest_sha256": "85e64afa2e50399eaebaad33d05581094ce415587c2a0625ea71778addf25f53",
+  "validated_at": "2026-10-26T05:14:54.567956+00:00",
+  "status": "structural_pass_semantic_blocked",
+  "checks": {
+    "total_examples_100": true,
+    "unique_ids": true,
+    "categories_50": true,
+    "two_per_category": true,
+    "short_long_per_category": true,
+    "no_golden_overlap": true,
+    "no_labels": true,
+    "rubric_hash_matches_current": true,
+    "card_pin_pending_review": true
+  },
+  "blocking_issues": [
+    "card_pin has no exact BANKING77 label.",
+    "get_physical_card and pin_blocked are not interchangeable.",
+    "The current card_pin cases are pin_blocked reset cases and are not validated.",
+    "Human inclusion review and manifest replacement are required before annotation."
+  ],
+  "rubric_version": "v1",
+  "rubric_sha256": "7ef7ca7fdfc4703c97ea933f9c5aa7a6afb0d658f647ce2e4ed2aaac2637b1d5"
+}

@@ -24,6 +24,9 @@ from promptguard.domain.models import EvaluationReport, GoldenTestCase
 from promptguard.domain.thresholds import RegressionThresholds
 from promptguard.infrastructure.dataset.json_repository import JsonDatasetRepository
 from promptguard.infrastructure.evaluation.deepeval_metrics import DeepEvalSummaryMetric
+from promptguard.infrastructure.evaluation.evaluator_config import (
+    build_evaluator_config,
+)
 from promptguard.infrastructure.llm.client import NVIDIAClient
 from promptguard.infrastructure.notifications.slack import NoopNotifier, SlackNotifier
 from promptguard.infrastructure.path_safety import validate_identifier
@@ -179,6 +182,7 @@ def _build_run_service(
         "category_aliases": aliases,
         "temperature": settings.nvidia_temperature,
         "seed": settings.nvidia_seed,
+        "evaluator": build_evaluator_config(settings),
     }
 
     evaluation_service = EvaluationService(

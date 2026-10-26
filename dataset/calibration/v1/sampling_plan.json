@@ -1,0 +1,113 @@
+{
+  "version": "v1",
+  "status": "blocked_pending_card_pin_inclusion_review",
+  "purpose": "Calibrate the summary-quality judge against human labels before Level 2.2 multi-dimensional scoring.",
+  "source": {
+    "dataset": "BANKING77",
+    "split": "test",
+    "path": "dataset/source/banking77/test.csv",
+    "encoding": "utf-16",
+    "prompt_path": "prompts/v1.yaml",
+    "golden_dataset_path": "dataset/v1/golden_dataset.json"
+  },
+  "seed": "20261026",
+  "target": {
+    "total_examples": 100,
+    "categories": 50,
+    "examples_per_category": 2,
+    "length_bands": [
+      "short",
+      "long"
+    ]
+  },
+  "selection": {
+    "method": "sha256_rank",
+    "hash_input": "seed + NUL + prompt_category + NUL + normalized_source_input",
+    "normalization": "lowercase and collapse whitespace",
+    "short_long_definition": "short is at or below the category median word count; long is above it",
+    "source_category_overrides": {
+      "card_pin": [
+        "get_physical_card",
+        "pin_blocked"
+      ]
+    },
+    "card_pin_filter": "normalized source input contains 'pin'",
+    "exclusions": [
+      "empty source inputs",
+      "duplicate normalized inputs",
+      "inputs present in dataset/v1/golden_dataset.json",
+      "candidate-generation failures"
+    ],
+    "replacement": "next-ranked eligible case in the same category and length band",
+    "manifest": "dataset/calibration/v1/sample_manifest.json",
+    "source_category_mapping_status": "pending_human_review",
+    "source_category_mapping_note": "BANKING77 has no exact card_pin label. get_physical_card covers PIN delivery/access; pin_blocked covers blocked/reset PIN. The two labels are not interchangeable.",
+    "card_pin_inclusion_criteria": [
+      "Include only cases whose primary intent is obtaining, locating, receiving, setting up, or viewing a card PIN.",
+      "Exclude cases whose primary intent is physical card delivery, blocked/reset PIN, changing PIN, forgotten passcode, or account lock.",
+      "Treat source labels as candidate pools; a human reviewer must record the inclusion decision and rationale for each selected card_pin case."
+    ],
+    "card_pin_review_file": "dataset/calibration/v1/card_pin_inclusion_review.csv",
+    "current_manifest_card_pin_status": "not_validated"
+  },
+  "candidate_generation": {
+    "prompt_version": "v1",
+    "model_source": "NVIDIA_MODEL",
+    "temperature_source": "NVIDIA_TEMPERATURE",
+    "seed_source": "NVIDIA_SEED",
+    "samples_per_case": 1,
+    "output_policy": "store the raw candidate summary; do not edit it before human review",
+    "failure_policy": "replace deterministically and record the failure reason"
+  },
+  "annotation": {
+    "reference_summary_policy": "human-written from the source input; never copy or paraphrase the candidate as the reference",
+    "score_scale": {
+      "minimum": 1,
+      "maximum": 5
+    },
+    "double_annotation_fraction": 0.2,
+    "double_annotation_count": 20,
+    "audit_selection": "first 20 ids ranked by sha256(seed + NUL + 'audit' + NUL + id)",
+    "adjudication": "a third annotator or consensus resolves disagreements; only the adjudicated score enters the calibration file",
+    "annotation_quality_review": {
+      "exact_agreement_target": 0.7,
+      "within_one_agreement_target": 0.9
+    },
+    "workbook_fields": [
+      "id",
+      "source_split",
+      "category",
+      "source_category",
+      "source_input",
+      "expected_summary",
+      "actual_summary",
+      "human_score",
+      "annotator_id",
+      "annotated_at",
+      "confidence",
+      "notes"
+    ]
+  },
+  "acceptance": {
+    "minimum_examples": 100,
+    "minimum_examples_per_category": 2,
+    "minimum_double_annotated": 20,
+    "rubric_version": "v1",
+    "rubric_sha256": "7ef7ca7fdfc4703c97ea933f9c5aa7a6afb0d658f647ce2e4ed2aaac2637b1d5",
+    "no_unresolved_adjudications": true,
+    "requires_card_pin_inclusion_review": true
+  },
+  "outputs": {
+    "manifest": "dataset/calibration/v1/sample_manifest.json",
+    "annotation_workbook": "dataset/calibration/v1/annotation_workbook.csv",
+    "calibration_dataset": "dataset/calibration/v1/judge_calibration.json",
+    "calibration_report": "dataset/calibration/v1/calibration_report.json",
+    "double_annotation_ids": "dataset/calibration/v1/double_annotation_ids.json"
+  },
+  "non_goals": [
+    "Do not include invented, provisional, or model-generated human scores.",
+    "Do not tune the judge rubric during annotation.",
+    "Do not start Level 2.2 multi-dimensional scoring before the first calibration report is reviewed.",
+    "Do not treat the card_pin source-category mapping as exact or validated."
+  ]
+}

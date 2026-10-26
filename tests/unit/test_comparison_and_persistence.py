@@ -1061,6 +1061,31 @@ class TestJsonPersistence:
         loaded = repository.get(saved.run_id)
         assert loaded.eval_config_hash == "fingerprint"
 
+    def test_save_persists_evaluator_identity(self, tmp_path: Path) -> None:
+        repository = JsonEvaluationRunRepository(tmp_path)
+        saved = report(results(1, 1))
+        saved.evaluator = {
+            "judge_model": "judge-a",
+            "judge_rubric_version": "v1",
+        }
+        repository.save(saved)
+        loaded = repository.get(saved.run_id)
+        assert loaded.evaluator == saved.evaluator
+
+    def test_legacy_report_without_evaluator_loads_none(
+        self, tmp_path: Path,
+    ) -> None:
+        repository = JsonEvaluationRunRepository(tmp_path)
+        saved = report(results(1, 1))
+        data = saved.model_dump(mode="json")
+        data.pop("evaluator")
+        (tmp_path / f"{saved.run_id}.json").write_text(
+            json.dumps(data), encoding="utf-8",
+        )
+
+        loaded = repository.get(saved.run_id)
+        assert loaded.evaluator is None
+
     def test_save_persists_regression_data(self, tmp_path: Path) -> None:
         repository = JsonEvaluationRunRepository(tmp_path)
         saved = report(results(0, 2))

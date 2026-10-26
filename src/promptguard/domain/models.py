@@ -1,6 +1,6 @@
 import math
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import (
     BaseModel,
@@ -185,6 +185,7 @@ class EvaluationReport(BaseModel):
     total_output_tokens: int = Field(ge=0)
     results: list[EvaluationResult]
     eval_config_hash: str | None = None
+    evaluator: dict[str, Any] | None = None
     thresholds: RegressionThresholds | None = None
     baseline_run_id: NonEmptyStr | None = None
     comparison: EvaluationComparison | None = None

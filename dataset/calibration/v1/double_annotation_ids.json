@@ -1,0 +1,136 @@
+{
+  "version": "v1",
+  "seed": "20261026",
+  "selection": "first 20 ids ranked by sha256(seed + NUL + 'audit' + NUL + id)",
+  "manifest_sha256": "85e64afa2e50399eaebaad33d05581094ce415587c2a0625ea71778addf25f53",
+  "count": 20,
+  "ids": [
+    "banking77-test-2971",
+    "banking77-test-2975",
+    "banking77-test-2956",
+    "banking77-test-0171",
+    "banking77-test-0346",
+    "banking77-test-2719",
+    "banking77-test-2130",
+    "banking77-test-0553",
+    "banking77-test-3051",
+    "banking77-test-2299",
+    "banking77-test-1757",
+    "banking77-test-0491",
+    "banking77-test-1130",
+    "banking77-test-1051",
+    "banking77-test-1680",
+    "banking77-test-2751",
+    "banking77-test-1797",
+    "banking77-test-2787",
+    "banking77-test-0524",
+    "banking77-test-0679"
+  ],
+  "examples": [
+    {
+      "id": "banking77-test-2971",
+      "category": "apple_pay_or_google_pay",
+      "source_category": "apple_pay_or_google_pay"
+    },
+    {
+      "id": "banking77-test-2975",
+      "category": "apple_pay_or_google_pay",
+      "source_category": "apple_pay_or_google_pay"
+    },
+    {
+      "id": "banking77-test-2956",
+      "category": "card_about_to_expire",
+      "source_category": "card_about_to_expire"
+    },
+    {
+      "id": "banking77-test-0171",
+      "category": "extra_charge_on_statement",
+      "source_category": "extra_charge_on_statement"
+    },
+    {
+      "id": "banking77-test-0346",
+      "category": "automatic_top_up",
+      "source_category": "automatic_top_up"
+    },
+    {
+      "id": "banking77-test-2719",
+      "category": "balance_not_updated_after_bank_transfer",
+      "source_category": "balance_not_updated_after_bank_transfer"
+    },
+    {
+      "id": "banking77-test-2130",
+      "category": "change_pin",
+      "source_category": "change_pin"
+    },
+    {
+      "id": "banking77-test-0553",
+      "category": "card_pin",
+      "source_category": "pin_blocked"
+    },
+    {
+      "id": "banking77-test-3051",
+      "category": "country_support",
+      "source_category": "country_support"
+    },
+    {
+      "id": "banking77-test-2299",
+      "category": "failed_transfer",
+      "source_category": "failed_transfer"
+    },
+    {
+      "id": "banking77-test-1757",
+      "category": "declined_transfer",
+      "source_category": "declined_transfer"
+    },
+    {
+      "id": "banking77-test-0491",
+      "category": "age_limit",
+      "source_category": "age_limit"
+    },
+    {
+      "id": "banking77-test-1130",
+      "category": "edit_personal_details",
+      "source_category": "edit_personal_details"
+    },
+    {
+      "id": "banking77-test-1051",
+      "category": "balance_not_updated_after_cheque_or_cash_deposit",
+      "source_category": "balance_not_updated_after_cheque_or_cash_deposit"
+    },
+    {
+      "id": "banking77-test-1680",
+      "category": "lost_or_stolen_phone",
+      "source_category": "lost_or_stolen_phone"
+    },
+    {
+      "id": "banking77-test-2751",
+      "category": "cash_withdrawal_not_recognised",
+      "source_category": "cash_withdrawal_not_recognised"
+    },
+    {
+      "id": "banking77-test-1797",
+      "category": "Refund_not_showing_up",
+      "source_category": "Refund_not_showing_up"
+    },
+    {
+      "id": "banking77-test-2787",
+      "category": "exchange_charge",
+      "source_category": "exchange_charge"
+    },
+    {
+      "id": "banking77-test-0524",
+      "category": "card_pin",
+      "source_category": "pin_blocked"
+    },
+    {
+      "id": "banking77-test-0679",
+      "category": "pending_top_up",
+      "source_category": "pending_top_up"
+    }
+  ],
+  "status": "provisional_card_pin_pending_review",
+  "pending_review_ids": [
+    "banking77-test-0553",
+    "banking77-test-0524"
+  ]
+}

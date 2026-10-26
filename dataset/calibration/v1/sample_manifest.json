@@ -1,0 +1,922 @@
+{
+  "version": "v1",
+  "manifest_status": "provisional_card_pin_pending_review",
+  "seed": "20261026",
+  "source_path": "dataset/source/banking77/test.csv",
+  "golden_dataset_path": "dataset/v1/golden_dataset.json",
+  "prompt_path": "prompts/v1.yaml",
+  "source_category_overrides": {
+    "card_pin": [
+      "get_physical_card",
+      "pin_blocked"
+    ]
+  },
+  "pending_review_categories": [
+    "card_pin"
+  ],
+  "total_examples": 100,
+  "examples": [
+    {
+      "id": "banking77-test-1768",
+      "source_split": "test",
+      "category": "Refund_not_showing_up",
+      "source_category": "Refund_not_showing_up",
+      "source_input": "How long does it take for a refund?",
+      "word_count": 8,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1797",
+      "source_split": "test",
+      "category": "Refund_not_showing_up",
+      "source_category": "Refund_not_showing_up",
+      "source_input": "I am waiting patiently for a week now for the seller to get back to me and there has been no response, could you please help me further with getting my money back.  Thank you.",
+      "word_count": 35,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-2875",
+      "source_split": "test",
+      "category": "activate_my_card",
+      "source_category": "activate_my_card",
+      "source_input": "What are the steps to activating a new card?",
+      "word_count": 9,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-2855",
+      "source_split": "test",
+      "category": "activate_my_card",
+      "source_category": "activate_my_card",
+      "source_input": "Would like to use my card and need to activate it first.  Can you help me do this?",
+      "word_count": 18,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0491",
+      "source_split": "test",
+      "category": "age_limit",
+      "source_category": "age_limit",
+      "source_input": "What is the minimum age to open an account?",
+      "word_count": 9,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0501",
+      "source_split": "test",
+      "category": "age_limit",
+      "source_category": "age_limit",
+      "source_input": "Can my 19 year old daughter open a savings account at the bank?",
+      "word_count": 13,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-2971",
+      "source_split": "test",
+      "category": "apple_pay_or_google_pay",
+      "source_category": "apple_pay_or_google_pay",
+      "source_input": "How can I top up my Google Pay?",
+      "word_count": 8,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-2975",
+      "source_split": "test",
+      "category": "apple_pay_or_google_pay",
+      "source_category": "apple_pay_or_google_pay",
+      "source_input": "Why can't I use my American Express with Apple Pay to top up my account?",
+      "word_count": 15,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1471",
+      "source_split": "test",
+      "category": "atm_support",
+      "source_category": "atm_support",
+      "source_input": "Where can I withdrawal my money?",
+      "word_count": 6,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1461",
+      "source_split": "test",
+      "category": "atm_support",
+      "source_category": "atm_support",
+      "source_input": "Can I get cash with this card anywhere?",
+      "word_count": 8,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0337",
+      "source_split": "test",
+      "category": "automatic_top_up",
+      "source_category": "automatic_top_up",
+      "source_input": "Do you have any limit on the auto top-up?",
+      "word_count": 9,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0346",
+      "source_split": "test",
+      "category": "automatic_top_up",
+      "source_category": "automatic_top_up",
+      "source_input": "Can I space out how often money is transferred along my travels?",
+      "word_count": 12,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-2703",
+      "source_split": "test",
+      "category": "balance_not_updated_after_bank_transfer",
+      "source_category": "balance_not_updated_after_bank_transfer",
+      "source_input": "Why is my balance the same?  I processed a transfer.",
+      "word_count": 10,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-2719",
+      "source_split": "test",
+      "category": "balance_not_updated_after_bank_transfer",
+      "source_category": "balance_not_updated_after_bank_transfer",
+      "source_input": "My account balance has not gone up even though I just transferred money into it",
+      "word_count": 15,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1051",
+      "source_split": "test",
+      "category": "balance_not_updated_after_cheque_or_cash_deposit",
+      "source_category": "balance_not_updated_after_cheque_or_cash_deposit",
+      "source_input": "Cash deposit to my account but it has not appeared.",
+      "word_count": 10,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1044",
+      "source_split": "test",
+      "category": "balance_not_updated_after_cheque_or_cash_deposit",
+      "source_category": "balance_not_updated_after_cheque_or_cash_deposit",
+      "source_input": "I don't know why the deposit I made a week ago still hasn't showed up, I really need the money now.",
+      "word_count": 21,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-2185",
+      "source_split": "test",
+      "category": "beneficiary_not_allowed",
+      "source_category": "beneficiary_not_allowed",
+      "source_input": "Explain why I can't do a transfer to a beneficiary.",
+      "word_count": 10,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-2187",
+      "source_split": "test",
+      "category": "beneficiary_not_allowed",
+      "source_category": "beneficiary_not_allowed",
+      "source_input": "Why isn't my transfer going through? I get a message saying it's not possible. I've had no issues in the past.",
+      "word_count": 21,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0710",
+      "source_split": "test",
+      "category": "cancel_transfer",
+      "source_category": "cancel_transfer",
+      "source_input": "How do i cancel my transaction?",
+      "word_count": 6,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0701",
+      "source_split": "test",
+      "category": "cancel_transfer",
+      "source_category": "cancel_transfer",
+      "source_input": "I transferred the wrong amount and would like to cancel the transaction.",
+      "word_count": 12,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-2957",
+      "source_split": "test",
+      "category": "card_about_to_expire",
+      "source_category": "card_about_to_expire",
+      "source_input": "in china, need new card",
+      "word_count": 5,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-2956",
+      "source_split": "test",
+      "category": "card_about_to_expire",
+      "source_category": "card_about_to_expire",
+      "source_input": "What would the price be for an expired card replacement and how long will it take me to get it?",
+      "word_count": 20,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0987",
+      "source_split": "test",
+      "category": "card_acceptance",
+      "source_category": "card_acceptance",
+      "source_input": "Where is my card accepted?",
+      "word_count": 5,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0985",
+      "source_split": "test",
+      "category": "card_acceptance",
+      "source_category": "card_acceptance",
+      "source_input": "Is it acceptable to use my card anywhere?",
+      "word_count": 8,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0018",
+      "source_split": "test",
+      "category": "card_arrival",
+      "source_category": "card_arrival",
+      "source_input": "Why hasn't my card been delivered?",
+      "word_count": 6,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0003",
+      "source_split": "test",
+      "category": "card_arrival",
+      "source_category": "card_arrival",
+      "source_input": "I ordered a card but it has not arrived. Help please!",
+      "word_count": 11,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0291",
+      "source_split": "test",
+      "category": "card_delivery_estimate",
+      "source_category": "card_delivery_estimate",
+      "source_input": "Does delivery to the US take long?",
+      "word_count": 7,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0287",
+      "source_split": "test",
+      "category": "card_delivery_estimate",
+      "source_category": "card_delivery_estimate",
+      "source_input": "How long will it take to deliver something to US?",
+      "word_count": 10,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0042",
+      "source_split": "test",
+      "category": "card_linking",
+      "source_category": "card_linking",
+      "source_input": "I would like to reactivate my card.",
+      "word_count": 7,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0069",
+      "source_split": "test",
+      "category": "card_linking",
+      "source_category": "card_linking",
+      "source_input": "I would like to link my card. How do I do it?",
+      "word_count": 12,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0393",
+      "source_split": "test",
+      "category": "card_not_working",
+      "source_category": "card_not_working",
+      "source_input": "My card suddenly quit working.",
+      "word_count": 5,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0400",
+      "source_split": "test",
+      "category": "card_not_working",
+      "source_category": "card_not_working",
+      "source_input": "Could it be that I deactivated my card, its not working?",
+      "word_count": 11,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0812",
+      "source_split": "test",
+      "category": "card_payment_fee_charged",
+      "source_category": "card_payment_fee_charged",
+      "source_input": "Why are there fees for card usage?",
+      "word_count": 7,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0803",
+      "source_split": "test",
+      "category": "card_payment_fee_charged",
+      "source_category": "card_payment_fee_charged",
+      "source_input": "Is there a reason I was charged a fee for using my card as payment? I've never had an extra fee before.",
+      "word_count": 22,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1118",
+      "source_split": "test",
+      "category": "card_payment_not_recognised",
+      "source_category": "card_payment_not_recognised",
+      "source_input": "There is a fraudulent charge on my statement.",
+      "word_count": 8,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1116",
+      "source_split": "test",
+      "category": "card_payment_not_recognised",
+      "source_category": "card_payment_not_recognised",
+      "source_input": "There is a strange payment on my statement. What should I do?",
+      "word_count": 12,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0141",
+      "source_split": "test",
+      "category": "card_payment_wrong_exchange_rate",
+      "source_category": "card_payment_wrong_exchange_rate",
+      "source_input": "I don't think my card payment exchange rate is correct.",
+      "word_count": 10,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0130",
+      "source_split": "test",
+      "category": "card_payment_wrong_exchange_rate",
+      "source_category": "card_payment_wrong_exchange_rate",
+      "source_input": "My exchange went wrong. I swapped Russian Ruble for UK pounds and was charged too much.",
+      "word_count": 16,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0553",
+      "source_split": "test",
+      "category": "card_pin",
+      "source_category": "pin_blocked",
+      "source_input": "How do I reset my PIN?",
+      "word_count": 6,
+      "length_band": "short",
+      "inclusion_status": "pending_human_review"
+    },
+    {
+      "id": "banking77-test-0524",
+      "source_split": "test",
+      "category": "card_pin",
+      "source_category": "pin_blocked",
+      "source_input": "I accidentally blocked my PIN. How do I reset it?",
+      "word_count": 10,
+      "length_band": "long",
+      "inclusion_status": "pending_human_review"
+    },
+    {
+      "id": "banking77-test-1940",
+      "source_split": "test",
+      "category": "card_swallowed",
+      "source_category": "card_swallowed",
+      "source_input": "ATM still has my card",
+      "word_count": 5,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1924",
+      "source_split": "test",
+      "category": "card_swallowed",
+      "source_category": "card_swallowed",
+      "source_input": "What do I do since the machine swallowed my card. I need one.",
+      "word_count": 13,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-2907",
+      "source_split": "test",
+      "category": "cash_withdrawal_charge",
+      "source_category": "cash_withdrawal_charge",
+      "source_input": "Using an ATM caused me to incur an additional fee. Why?",
+      "word_count": 11,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-2916",
+      "source_split": "test",
+      "category": "cash_withdrawal_charge",
+      "source_category": "cash_withdrawal_charge",
+      "source_input": "Was charged an ATM fee despite it being a small withdrawal on the 1st day of the month. I thought I was allowed 200 per month?",
+      "word_count": 26,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-2751",
+      "source_split": "test",
+      "category": "cash_withdrawal_not_recognised",
+      "source_category": "cash_withdrawal_not_recognised",
+      "source_input": "I don't recognise a cash withdrawal",
+      "word_count": 6,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-2754",
+      "source_split": "test",
+      "category": "cash_withdrawal_not_recognised",
+      "source_category": "cash_withdrawal_not_recognised",
+      "source_input": "I didn't take out money from an ATM but my app statement shows that I did. How can I fix this?",
+      "word_count": 21,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-2159",
+      "source_split": "test",
+      "category": "change_pin",
+      "source_category": "change_pin",
+      "source_input": "How to change the PIN on my card?",
+      "word_count": 8,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-2130",
+      "source_split": "test",
+      "category": "change_pin",
+      "source_category": "change_pin",
+      "source_input": "I desperately need to change my PIN, but I'm overseas on vacation right now. How can I do this?",
+      "word_count": 19,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1440",
+      "source_split": "test",
+      "category": "compromised_card",
+      "source_category": "compromised_card",
+      "source_input": "Someone else is using my card, freeze it.",
+      "word_count": 8,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1414",
+      "source_split": "test",
+      "category": "compromised_card",
+      "source_category": "compromised_card",
+      "source_input": "I think my identity has been stolen, can you check on unauthorized charges?",
+      "word_count": 13,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0594",
+      "source_split": "test",
+      "category": "contactless_not_working",
+      "source_category": "contactless_not_working",
+      "source_input": "Help me with my contactless which isn't working.",
+      "word_count": 8,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0571",
+      "source_split": "test",
+      "category": "contactless_not_working",
+      "source_category": "contactless_not_working",
+      "source_input": "For some reason my contactless has stopped working. I don't know what the problem is. What can I do?",
+      "word_count": 19,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-3073",
+      "source_split": "test",
+      "category": "country_support",
+      "source_category": "country_support",
+      "source_input": "Am I able to get a card in EU?",
+      "word_count": 9,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-3051",
+      "source_split": "test",
+      "category": "country_support",
+      "source_category": "country_support",
+      "source_input": "Can I get a card despite the fact I'm not in the UK?",
+      "word_count": 13,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1831",
+      "source_split": "test",
+      "category": "declined_card_payment",
+      "source_category": "declined_card_payment",
+      "source_input": "Why was my Payment declined",
+      "word_count": 5,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1812",
+      "source_split": "test",
+      "category": "declined_card_payment",
+      "source_category": "declined_card_payment",
+      "source_input": "My new card keeps getting declined. I was very excited to use it for the first time today. Why is this doing this?",
+      "word_count": 23,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1564",
+      "source_split": "test",
+      "category": "declined_cash_withdrawal",
+      "source_category": "declined_cash_withdrawal",
+      "source_input": "The ATM did not allow me to withdraw",
+      "word_count": 8,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1599",
+      "source_split": "test",
+      "category": "declined_cash_withdrawal",
+      "source_category": "declined_cash_withdrawal",
+      "source_input": "The cash I tried to draw from the ATM was not approved.",
+      "word_count": 12,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1753",
+      "source_split": "test",
+      "category": "declined_transfer",
+      "source_category": "declined_transfer",
+      "source_input": "I can't transfer money from my account.",
+      "word_count": 7,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1757",
+      "source_split": "test",
+      "category": "declined_transfer",
+      "source_category": "declined_transfer",
+      "source_input": "My card is being declined online. Could you tell me what might be broken or wrong with the account?",
+      "word_count": 19,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1489",
+      "source_split": "test",
+      "category": "direct_debit_payment_not_recognised",
+      "source_category": "direct_debit_payment_not_recognised",
+      "source_input": "There's a debit on my account that I didn't do.",
+      "word_count": 10,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1511",
+      "source_split": "test",
+      "category": "direct_debit_payment_not_recognised",
+      "source_category": "direct_debit_payment_not_recognised",
+      "source_input": "I understand that this is extremely late. After going over my transactions for the last couple of months I noticed a large charge that I'm sure I did not make. Is there anyway I can still dispute this?",
+      "word_count": 38,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1387",
+      "source_split": "test",
+      "category": "disposable_card_limits",
+      "source_category": "disposable_card_limits",
+      "source_input": "Can you explain the virtual cards limit?",
+      "word_count": 7,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1370",
+      "source_split": "test",
+      "category": "disposable_card_limits",
+      "source_category": "disposable_card_limits",
+      "source_input": "What is the amount of disposable cards I can have each day?",
+      "word_count": 12,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1128",
+      "source_split": "test",
+      "category": "edit_personal_details",
+      "source_category": "edit_personal_details",
+      "source_input": "I want to change my personal details.",
+      "word_count": 7,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1130",
+      "source_split": "test",
+      "category": "edit_personal_details",
+      "source_category": "edit_personal_details",
+      "source_input": "I need to edit the personal details section of my account",
+      "word_count": 11,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-2798",
+      "source_split": "test",
+      "category": "exchange_charge",
+      "source_category": "exchange_charge",
+      "source_input": "Does it cost anything for exchanges?",
+      "word_count": 6,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-2787",
+      "source_split": "test",
+      "category": "exchange_charge",
+      "source_category": "exchange_charge",
+      "source_input": "Are there any extra hidden fees for exchanging currencies?",
+      "word_count": 9,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0092",
+      "source_split": "test",
+      "category": "exchange_rate",
+      "source_category": "exchange_rate",
+      "source_input": "What are the most current exchange rates?",
+      "word_count": 7,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0111",
+      "source_split": "test",
+      "category": "exchange_rate",
+      "source_category": "exchange_rate",
+      "source_input": "Where did your guys exchange rates come from?",
+      "word_count": 8,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0440",
+      "source_split": "test",
+      "category": "exchange_via_app",
+      "source_category": "exchange_via_app",
+      "source_input": "I would like to exchange currencies",
+      "word_count": 6,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0438",
+      "source_split": "test",
+      "category": "exchange_via_app",
+      "source_category": "exchange_via_app",
+      "source_input": "Can I use this app to change dollars into euros?",
+      "word_count": 10,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0169",
+      "source_split": "test",
+      "category": "extra_charge_on_statement",
+      "source_category": "extra_charge_on_statement",
+      "source_input": "Why does my statement have these extra charges?",
+      "word_count": 8,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0171",
+      "source_split": "test",
+      "category": "extra_charge_on_statement",
+      "source_category": "extra_charge_on_statement",
+      "source_input": "I can see an extra 1┬ú charge on my app. Why did you charge me extra?",
+      "word_count": 16,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-2314",
+      "source_split": "test",
+      "category": "failed_transfer",
+      "source_category": "failed_transfer",
+      "source_input": "help me with my transfer",
+      "word_count": 5,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-2299",
+      "source_split": "test",
+      "category": "failed_transfer",
+      "source_category": "failed_transfer",
+      "source_input": "The transfer keeps failing , I tried to transfer some money to friends this morning but it keeps getting rejected for some reason, Would you please check the issue ?",
+      "word_count": 30,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0275",
+      "source_split": "test",
+      "category": "fiat_currency_support",
+      "source_category": "fiat_currency_support",
+      "source_input": "How man currencies can I hold?",
+      "word_count": 6,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0258",
+      "source_split": "test",
+      "category": "fiat_currency_support",
+      "source_category": "fiat_currency_support",
+      "source_input": "When considering currency holdings and exchanges, what fiat currencies are supported?",
+      "word_count": 11,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-2631",
+      "source_split": "test",
+      "category": "get_disposable_virtual_card",
+      "source_category": "get_disposable_virtual_card",
+      "source_input": "How do disposable cards work?",
+      "word_count": 5,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-2619",
+      "source_split": "test",
+      "category": "get_disposable_virtual_card",
+      "source_category": "get_disposable_virtual_card",
+      "source_input": "May I get a disposable virtual card as well?",
+      "word_count": 9,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-2401",
+      "source_split": "test",
+      "category": "getting_spare_card",
+      "source_category": "getting_spare_card",
+      "source_input": "Would it be possible to get another card?",
+      "word_count": 8,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-2438",
+      "source_split": "test",
+      "category": "getting_spare_card",
+      "source_category": "getting_spare_card",
+      "source_input": "My daughter needs a card. Can I give her one of mine that's linked to my account?",
+      "word_count": 17,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0951",
+      "source_split": "test",
+      "category": "getting_virtual_card",
+      "source_category": "getting_virtual_card",
+      "source_input": "Please help me get a virtual card.",
+      "word_count": 7,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0959",
+      "source_split": "test",
+      "category": "getting_virtual_card",
+      "source_category": "getting_virtual_card",
+      "source_input": "Is there a way to obtain a virtual card?",
+      "word_count": 9,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0452",
+      "source_split": "test",
+      "category": "lost_or_stolen_card",
+      "source_category": "lost_or_stolen_card",
+      "source_input": "How do I report my card stolen?",
+      "word_count": 7,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0448",
+      "source_split": "test",
+      "category": "lost_or_stolen_card",
+      "source_category": "lost_or_stolen_card",
+      "source_input": "I believe my card has been stolen, what can I do about this situation? It's urgent.",
+      "word_count": 16,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1660",
+      "source_split": "test",
+      "category": "lost_or_stolen_phone",
+      "source_category": "lost_or_stolen_phone",
+      "source_input": "lost phone, can i still access account?",
+      "word_count": 7,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1680",
+      "source_split": "test",
+      "category": "lost_or_stolen_phone",
+      "source_category": "lost_or_stolen_phone",
+      "source_input": "My things were stolen yesterday and I can't use any apps or anything, so I am going to need some help.",
+      "word_count": 21,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-2512",
+      "source_split": "test",
+      "category": "order_physical_card",
+      "source_category": "order_physical_card",
+      "source_input": "Where do you deliver cards by mail?",
+      "word_count": 7,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-2492",
+      "source_split": "test",
+      "category": "order_physical_card",
+      "source_category": "order_physical_card",
+      "source_input": "Do you ship cards to where I live?",
+      "word_count": 8,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1553",
+      "source_split": "test",
+      "category": "passcode_forgotten",
+      "source_category": "passcode_forgotten",
+      "source_input": "How do I reset the passcode?",
+      "word_count": 6,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1540",
+      "source_split": "test",
+      "category": "passcode_forgotten",
+      "source_category": "passcode_forgotten",
+      "source_input": "I have forgotten my passcode to access my app",
+      "word_count": 9,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1610",
+      "source_split": "test",
+      "category": "pending_card_payment",
+      "source_category": "pending_card_payment",
+      "source_input": "When will my card payment be done pending?",
+      "word_count": 8,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1638",
+      "source_split": "test",
+      "category": "pending_card_payment",
+      "source_category": "pending_card_payment",
+      "source_input": "I have paid by my card but payment is still its coming as pending. I think there is some issue please check and let me know when the status will complete.",
+      "word_count": 31,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0209",
+      "source_split": "test",
+      "category": "pending_cash_withdrawal",
+      "source_category": "pending_cash_withdrawal",
+      "source_input": "Why is my withdrawal still pending?",
+      "word_count": 6,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0232",
+      "source_split": "test",
+      "category": "pending_cash_withdrawal",
+      "source_category": "pending_cash_withdrawal",
+      "source_input": "I received cash from the ATM earlier, but this shows up as pending in the app.  I've got the cash already.  How can this be still pending?",
+      "word_count": 27,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-0657",
+      "source_split": "test",
+      "category": "pending_top_up",
+      "source_category": "pending_top_up",
+      "source_input": "why hasn't my top up gone through yet",
+      "word_count": 8,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-0679",
+      "source_split": "test",
+      "category": "pending_top_up",
+      "source_category": "pending_top_up",
+      "source_input": "The top-up has a definite problem! I regularly use your service and haven't had a problem before, but now the top-up just shows pending. Please tell my why it continues to show pending.",
+      "word_count": 33,
+      "length_band": "long"
+    },
+    {
+      "id": "banking77-test-1863",
+      "source_split": "test",
+      "category": "pending_transfer",
+      "source_category": "pending_transfer",
+      "source_input": "When will my transfer go through?",
+      "word_count": 6,
+      "length_band": "short"
+    },
+    {
+      "id": "banking77-test-1850",
+      "source_split": "test",
+      "category": "pending_transfer",
+      "source_category": "pending_transfer",
+      "source_input": "I submitted my transfer but it has been pending for quite a while and I was wondering what takes so long? why hasn't it completed",
+      "word_count": 25,
+      "length_band": "long"
+    }
+  ]
+}

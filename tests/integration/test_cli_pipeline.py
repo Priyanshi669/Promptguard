@@ -1,5 +1,6 @@
 """End-to-end CLI integration tests with deterministic provider fakes."""
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, ClassVar
@@ -101,7 +102,11 @@ async def test_cli_returns_zero_when_gate_passes(
     )
 
     assert exit_code == 0
-    assert len(list(tmp_path.glob("*.json"))) == 1
+    runs = list(tmp_path.glob("*.json"))
+    assert len(runs) == 1
+    report = json.loads(runs[0].read_text(encoding="utf-8"))
+    assert report["evaluator"]["judge_model"] == "test-model"
+    assert report["evaluator"]["judge_rubric_sha256"]
 
 
 @pytest.mark.asyncio

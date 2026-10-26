@@ -18,6 +18,7 @@ class ReportingService:
         dataset: str,
         eval_config_hash: str | None = None,
         thresholds: RegressionThresholds | None = None,
+        evaluator: dict[str, object] | None = None,
     ) -> EvaluationReport:
         """Aggregate a complete run, including an explicitly empty run."""
         case_count = len(results)
@@ -29,6 +30,7 @@ class ReportingService:
             model=model,
             dataset=dataset,
             eval_config_hash=eval_config_hash,
+            evaluator=evaluator,
             thresholds=thresholds,
             case_count=case_count,
             category_accuracy=(

@@ -15,11 +15,16 @@ application/      services + contracts (ABCs implemented by infrastructure)
   reporting_service.py     aggregates results -> EvaluationReport
   comparison_service.py    baseline deltas + threshold evaluation
   drift_service.py         category-distribution drift
+  calibration_service.py   judge/human agreement and bias metrics
   run_service.py           orchestrates the full pipeline
   contracts.py             EvaluationRunRepository, ReportFormatter,
                            Notifier, LLMClient
 infrastructure/   concrete adapters (NVIDIA, DeepEval, JSON, Slack, text)
-interfaces/       CLI composition root
+  calibration/             human-labelled calibration-data loader
+  evaluation/rubric.py     versioned, content-hashed judge rubric
+  evaluation/evaluator_config.py  non-secret evaluator identity
+interfaces/       CLI composition roots
+  calibration_cli.py       promptguard-calibrate entrypoint
 ```
 
 ## Data flow
@@ -60,14 +65,73 @@ the run; mixed absolute and drop policies never pass on a partial
 evaluation. `--limit` must be at least `1`; an empty run can never satisfy
 a quality gate.
 
+### Judge calibration
+
+```
+promptguard-calibrate --file calibration.json [--output report.json]
+                      [--min-samples 20] [--max-mae 0.75]
+                      [--min-pearson 0.6] [--min-within-one 0.8]
+                      [--max-absolute-bias 0.5]
+```
+
+Calibration input must be an object with dataset metadata and an
+`examples` list. Every example requires a human-reviewed score on the same
+1-5 scale as the judge. The rubric version and content hash must match the
+current rubric, so labels cannot silently survive a rubric change:
+
+```json
+{
+  "metadata": {
+    "version": "calibration-v1",
+    "rubric_version": "v1",
+    "rubric_sha256": "<current summary-quality rubric hash>"
+  },
+  "examples": [
+    {
+      "id": "case-1",
+      "expected_summary": "Human reference summary",
+      "actual_summary": "Candidate summary",
+      "human_score": 4
+    }
+  ]
+}
+```
+
+The command scores each candidate with the configured judge and reports
+mean absolute error, RMSE, Pearson and Spearman correlation, exact and
+within-one agreement, and mean bias. It also records the dataset version,
+content hash, sample count, rubric identity, evaluator identity, and every
+per-example human/judge score. High correlation alone cannot pass: the
+MAE, within-one agreement, and absolute-bias limits are mandatory. Exit
+codes are `0` when all calibration limits pass, `1` when they fail, and `2`
+for configuration or provider errors. Do not use provisional or
+model-generated labels as human ground truth.
+
+Calibration data preparation is documented in
+[`dataset/calibration/README.md`](dataset/calibration/README.md). The v1
+plan selects 100 unlabeled BANKING77 cases, two per prompt category, and
+requires human-written references plus 20% double annotation. The
+repository currently contains only the schema, sampling plan, and
+unlabeled manifest; no reference labels are included. The `card_pin`
+entries are provisional: BANKING77 has no exact label, and the proposed
+`get_physical_card`/`pin_blocked` mapping needs human inclusion review. For
+the v1 plan, run the command with `--min-samples 100` only after that
+review is complete.
+
 Reports are persisted as complete JSON runs under `runs/` and rendered
 to the console. When a baseline is used, the comparison deltas are stored
 on the report and rendered even when the gate passes. Every report carries
 an `eval_config_hash` fingerprinting the prompt, dataset, model, test
-cases, and sampling configuration. Gate thresholds are persisted
-separately and are deliberately excluded from the fingerprint, so changing
-a release policy does not invalidate a comparable baseline. A baseline
-without a fingerprint is INCONCLUSIVE rather than silently accepted.
+cases, sampling configuration, and evaluator identity: judge provider and
+model, endpoint, rubric version and content hash, and DeepEval version.
+Changing any of those evaluator inputs invalidates prior baselines.
+Gate thresholds are persisted separately and are deliberately excluded
+from the fingerprint, so changing a release policy does not invalidate a
+comparable baseline. A baseline without a fingerprint is INCONCLUSIVE
+rather than silently accepted. Reports created before evaluator identity
+was added remain loadable, but a legacy fingerprint cannot prove judge
+identity and will not match a new run; that baseline is INCONCLUSIVE
+rather than silently trusted.
 
 Timestamps are normalized to UTC and must be timezone-aware. Reports with
 naive, missing, or malformed timestamps are skipped when listing runs and

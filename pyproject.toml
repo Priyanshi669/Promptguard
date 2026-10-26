@@ -21,6 +21,7 @@ dependencies = [
 
 [project.scripts]
 promptguard = "promptguard.interfaces.cli:run"
+promptguard-calibrate = "promptguard.interfaces.calibration_cli:run"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]

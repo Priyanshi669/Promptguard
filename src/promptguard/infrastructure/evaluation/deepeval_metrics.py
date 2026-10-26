@@ -7,6 +7,9 @@ from deepeval.test_case import LLMTestCase, SingleTurnParams
 
 from promptguard.domain.metrics import SummaryMetric
 from promptguard.infrastructure.evaluation.nvidia_judge import NVIDIAJudge
+from promptguard.infrastructure.evaluation.rubric import (
+    SUMMARY_QUALITY_CRITERIA,
+)
 
 
 class DeepEvalSummaryMetric(SummaryMetric):
@@ -16,13 +19,7 @@ class DeepEvalSummaryMetric(SummaryMetric):
         """Initialize the DeepEval metric."""
         self._metric = GEval(
             name="Summary Quality",
-            criteria=(
-                "Evaluate whether the actual summary accurately captures "
-                "the meaning and important information in the expected "
-                "summary. Penalize factual contradictions, invented "
-                "information, and omission of important information. "
-                "Allow reasonable paraphrasing and differences in wording."
-            ),
+            criteria=SUMMARY_QUALITY_CRITERIA,
             evaluation_params=[
                 SingleTurnParams.EXPECTED_OUTPUT,
                 SingleTurnParams.ACTUAL_OUTPUT,

@@ -100,6 +100,7 @@ class EvaluationRunService:
                 dataset=dataset,
                 eval_config=eval_config,
             ),
+            evaluator=self._extract_evaluator(eval_config),
             thresholds=thresholds,
         )
 
@@ -170,6 +171,18 @@ class EvaluationRunService:
             notification_error=notification_error,
             skipped_runs=skipped_runs,
         )
+
+    @staticmethod
+    def _extract_evaluator(
+        eval_config: dict[str, Any] | None,
+    ) -> dict[str, Any] | None:
+        """Return the evaluator identity embedded in the eval configuration."""
+        if not eval_config:
+            return None
+        evaluator = eval_config.get("evaluator")
+        if not isinstance(evaluator, dict) or not evaluator:
+            return None
+        return dict(evaluator)
 
     @staticmethod
     def _compute_eval_config_hash(

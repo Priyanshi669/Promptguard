@@ -382,6 +382,62 @@ async def test_eval_config_hash_changes_when_evaluation_inputs_change() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("field", "changed_value"),
+    [
+        ("judge_model", "judge-b"),
+        ("judge_base_url", "https://example.invalid/v1"),
+        ("judge_metric", "different-metric"),
+        ("judge_rubric_version", "v2"),
+        ("judge_rubric_sha256", "b" * 64),
+        ("deepeval_version", "9.9.9"),
+    ],
+)
+async def test_eval_config_hash_changes_when_evaluator_changes(
+    field: str,
+    changed_value: str,
+) -> None:
+    """Every relevant judge setting must invalidate baseline compatibility."""
+    base_evaluator = {
+        "judge_provider": "nvidia",
+        "judge_model": "judge-a",
+        "judge_base_url": "https://integrate.api.nvidia.com/v1",
+        "judge_metric": "deepeval-geval-summary-quality",
+        "judge_rubric_version": "v1",
+        "judge_rubric_sha256": "a" * 64,
+        "deepeval_version": "4.1.10",
+    }
+    service, _ = build_service([result()])
+    base = await run(service, eval_config={"evaluator": base_evaluator})
+    other = await run(
+        service,
+        eval_config={
+            "evaluator": {**base_evaluator, field: changed_value},
+        },
+    )
+
+    assert (
+        base.report.eval_config_hash  # type: ignore[union-attr]
+        != other.report.eval_config_hash  # type: ignore[union-attr]
+    )
+
+
+@pytest.mark.asyncio
+async def test_run_records_evaluator_identity() -> None:
+    """The report should retain the evaluator metadata used for its hash."""
+    evaluator = {
+        "judge_model": "judge-a",
+        "judge_rubric_sha256": "abc",
+        "deepeval_version": "4.1.10",
+    }
+    service, _ = build_service([result()])
+
+    outcome = await run(service, eval_config={"evaluator": evaluator})
+
+    assert outcome.report.evaluator == evaluator  # type: ignore[union-attr]
+
+
+@pytest.mark.asyncio
 async def test_eval_config_hash_ignores_threshold_policy_changes() -> None:
     """Changing gate thresholds should not invalidate a baseline fingerprint."""
     service, _ = build_service([result()])
@@ -421,6 +477,34 @@ async def test_run_incompatible_baseline_is_inconclusive() -> None:
     reasons = outcome.report.regression.incompatibility_reasons  # type: ignore[union-attr]
     assert any("Model mismatch" in reason for reason in reasons)
     assert outcome.report.baseline_run_id is None  # type: ignore[union-attr]
+
+
+@pytest.mark.asyncio
+async def test_run_evaluator_change_is_inconclusive_against_baseline() -> None:
+    """A judge, endpoint, or rubric change must block baseline comparison."""
+    repository = FakeRepository()
+    service, _ = build_service([result()], repository=repository)
+    baseline = await run(
+        service,
+        eval_config={"evaluator": {"judge_model": "judge-a"}},
+    )
+
+    second_service, _ = build_service([result()], repository=repository)
+    outcome = await run(
+        second_service,
+        thresholds=RegressionThresholds(minimum_category_accuracy=0.0),
+        baseline_run_id=baseline.report.run_id,  # type: ignore[union-attr]
+        eval_config={"evaluator": {"judge_model": "judge-b"}},
+    )
+
+    regression = outcome.report.regression  # type: ignore[union-attr]
+    assert regression is not None
+    assert regression.status == "INCONCLUSIVE"
+    assert outcome.comparison is None
+    assert any(
+        "Evaluation config mismatch" in reason
+        for reason in regression.incompatibility_reasons
+    )
 
 
 @pytest.mark.asyncio

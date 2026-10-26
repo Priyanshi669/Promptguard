@@ -8,6 +8,9 @@ import pytest
 from promptguard.infrastructure.evaluation.deepeval_metrics import (
     DeepEvalSummaryMetric,
 )
+from promptguard.infrastructure.evaluation.rubric import (
+    SUMMARY_QUALITY_CRITERIA,
+)
 
 
 @pytest.mark.parametrize(
@@ -56,7 +59,7 @@ async def test_score_uses_deepeval_measurement() -> None:
         patch(
             "promptguard.infrastructure.evaluation.deepeval_metrics.GEval",
             return_value=metric,
-        ),
+        ) as geval,
     ):
         summary_metric = DeepEvalSummaryMetric()
 
@@ -66,4 +69,5 @@ async def test_score_uses_deepeval_measurement() -> None:
     )
 
     assert score == 4.0
+    assert geval.call_args.kwargs["criteria"] == SUMMARY_QUALITY_CRITERIA
     metric.a_measure.assert_awaited_once()
