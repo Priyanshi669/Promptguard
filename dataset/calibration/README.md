@@ -16,12 +16,14 @@ calibration report has been reviewed.
 | `v1/sampling_plan.json` | Population, sample size, deterministic selection rules, annotation controls, and acceptance criteria |
 | `v1/sample_manifest.json` | 100 unlabeled source cases selected for annotation |
 | `v1/calibration_schema.json` | JSON Schema for the final labelled calibration file |
-| `v1/annotation_workbook.csv` | Header-only workbook for annotators |
+| `v1/annotation_workbook.csv` | 120 blank reviewer rows: 100 primary plus 20 secondary audit rows |
+| `v1/annotation_queue.json` | 100-case queue with audit flags, source inputs, and pending-review status |
 | `v1/double_annotation_ids.json` | Provisional 20-case audit subset and manifest hash |
 | `v1/manifest_validation.json` | Structural validation snapshot and semantic blocker |
 | `v1/card_pin_coverage_review.md` | Coverage finding and human inclusion criteria |
-| `v1/card_pin_inclusion_review.csv` | Header-only provenance template for card_pin inclusion decisions |
+| `v1/card_pin_inclusion_review.csv` | Blank provenance rows for the two provisional card_pin cases |
 | `scripts/build_calibration_sample.py` | Reproducible manifest builder |
+| `scripts/build_annotation_package.py` | Reproducible blank workbook and queue builder |
 
 The final labelled dataset and calibration report do not exist yet.
 Structural validation passes for the 100-case manifest, but annotation and
@@ -48,10 +50,11 @@ calibration are blocked until the `card_pin` inclusion review is complete.
   [`v1/card_pin_coverage_review.md`](v1/card_pin_coverage_review.md) before
   using them.
 
-Regenerate the manifest with:
+Regenerate the manifest and reviewer package with:
 
 ```powershell
 uv run python scripts/build_calibration_sample.py
+uv run python scripts/build_annotation_package.py
 ```
 
 The manifest contains `category` (the prompt taxonomy) and
@@ -175,10 +178,13 @@ Do penalize:
   exact agreement is below `0.70`, pause and recalibrate the annotators
   before continuing.
 
-The workbook is one row per annotator. For double-annotated cases, create a
-second row with the same `id`, a different `annotator_id`, and that
-annotator's independent score. The adjudicated score is written only to the
-final calibration file.
+The reviewer package is already expanded to 120 blank rows: one `primary`
+row for every case and a `secondary` row for each of the 20 audit cases.
+Before scoring, populate `actual_summary` with the raw production candidate
+summary; do not hand-edit it. Reviewers fill `annotator_id`,
+`annotated_at`, `expected_summary`, and `human_score`. Do not copy another
+reviewer's score into the secondary row. The adjudicated score is written
+only to the final calibration file.
 
 ## Final calibration file
 

@@ -75,9 +75,12 @@
     },
     "workbook_fields": [
       "id",
+      "annotation_pass",
+      "is_double_annotated",
       "source_split",
       "category",
       "source_category",
+      "inclusion_status",
       "source_input",
       "expected_summary",
       "actual_summary",
@@ -102,7 +105,8 @@
     "annotation_workbook": "dataset/calibration/v1/annotation_workbook.csv",
     "calibration_dataset": "dataset/calibration/v1/judge_calibration.json",
     "calibration_report": "dataset/calibration/v1/calibration_report.json",
-    "double_annotation_ids": "dataset/calibration/v1/double_annotation_ids.json"
+    "double_annotation_ids": "dataset/calibration/v1/double_annotation_ids.json",
+    "annotation_queue": "dataset/calibration/v1/annotation_queue.json"
   },
   "non_goals": [
     "Do not include invented, provisional, or model-generated human scores.",

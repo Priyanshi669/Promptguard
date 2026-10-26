@@ -138,8 +138,12 @@ def test_manifest_is_balanced_and_unlabeled() -> None:
     )
 
 
-def test_annotation_workbook_is_header_only() -> None:
-    """The workbook should provide fields without provisional labels."""
+def test_annotation_workbook_is_blank_and_balanced() -> None:
+    """The workbook should provide 120 blank rows without provisional labels."""
+    manifest = load_json(CALIBRATION_DIR / "sample_manifest.json")
+    audit = load_json(CALIBRATION_DIR / "double_annotation_ids.json")
+    manifest_ids = {example["id"] for example in manifest["examples"]}
+
     with (CALIBRATION_DIR / "annotation_workbook.csv").open(
         "r",
         encoding="utf-8",
@@ -149,15 +153,63 @@ def test_annotation_workbook_is_header_only() -> None:
         rows = list(reader)
         fields = set(reader.fieldnames or [])
 
-    assert rows == []
+    assert len(rows) == 120
+    assert len({row["id"] for row in rows}) == 100
+    assert {row["id"] for row in rows} == manifest_ids
+    assert sum(row["annotation_pass"] == "primary" for row in rows) == 100
+    assert sum(row["annotation_pass"] == "secondary" for row in rows) == 20
     assert {
-        "id",
-        "source_input",
-        "expected_summary",
-        "actual_summary",
-        "human_score",
+        row["id"]
+        for row in rows
+        if row["annotation_pass"] == "secondary"
+    } == set(audit["ids"])
+    assert all(
+        row[field] == ""
+        for row in rows
+        for field in (
+            "expected_summary",
+            "actual_summary",
+            "human_score",
+            "annotator_id",
+            "annotated_at",
+        )
+    )
+    plan = load_json(CALIBRATION_DIR / "sampling_plan.json")
+    assert fields == set(plan["annotation"]["workbook_fields"])
+    assert {
+        "annotation_pass",
+        "is_double_annotated",
+        "inclusion_status",
         "annotator_id",
     } <= fields
+
+
+def test_annotation_queue_matches_manifest_and_audit() -> None:
+    """The queue should expose the 100 cases and 20 audit cases."""
+    manifest = load_json(CALIBRATION_DIR / "sample_manifest.json")
+    audit = load_json(CALIBRATION_DIR / "double_annotation_ids.json")
+    queue = load_json(CALIBRATION_DIR / "annotation_queue.json")
+
+    assert queue["status"] == "provisional_card_pin_pending_review"
+    assert queue["manifest_sha256"] == hashlib.sha256(
+        (CALIBRATION_DIR / "sample_manifest.json").read_bytes()
+    ).hexdigest()
+    assert queue["rubric_sha256"] == summary_quality_rubric_sha256()
+    assert queue["total_examples"] == 100
+    assert queue["audit_examples"] == 20
+    assert queue["pending_review_examples"] == 2
+    assert len(queue["items"]) == 100
+    assert {item["id"] for item in queue["items"]} == {
+        example["id"] for example in manifest["examples"]
+    }
+    assert {
+        item["id"] for item in queue["items"] if item["audit"]
+    } == set(audit["ids"])
+    assert all(
+        item["inclusion_status"] == "pending_human_review"
+        for item in queue["items"]
+        if item["category"] == "card_pin"
+    )
 
 
 def test_double_annotation_ids_are_reproducible_and_unlabeled() -> None:
@@ -220,7 +272,19 @@ def test_card_pin_review_documents_the_mapping_limitation() -> None:
         rows = list(reader)
         fields = set(reader.fieldnames or [])
 
-    assert rows == []
+    assert len(rows) == 2
+    assert {row["id"] for row in rows} == {
+        "banking77-test-0553",
+        "banking77-test-0524",
+    }
+    assert all(
+        row["decision"] == ""
+        and row["primary_intent"] == ""
+        and row["rationale"] == ""
+        and row["reviewer_id"] == ""
+        and row["reviewed_at"] == ""
+        for row in rows
+    )
     assert {
         "id",
         "source_category",

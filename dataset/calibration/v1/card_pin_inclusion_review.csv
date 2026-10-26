@@ -1,1 +1,3 @@
 id,source_category,source_input,decision,primary_intent,rationale,reviewer_id,reviewed_at
+banking77-test-0553,pin_blocked,How do I reset my PIN?,,,,,
+banking77-test-0524,pin_blocked,I accidentally blocked my PIN. How do I reset it?,,,,,
