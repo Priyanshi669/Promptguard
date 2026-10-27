@@ -7,6 +7,11 @@ from typing import Any
 
 import pytest
 
+from scripts.build_annotation_package import (
+    REVIEWER_FIELDS,
+    build_candidate_summaries_by_id,
+    build_workbook_rows,
+)
 from scripts.build_annotation_packets import (
     build_answerable_records_from_candidates,
     build_packet_rows,
@@ -435,3 +440,94 @@ def test_candidate_completeness_failure_raises(
     candidates["records"] = candidates["records"][:2]
     with pytest.raises(ValueError, match="No candidate outputs"):
         build_answerable_records_from_candidates(manifest, candidates)
+
+
+def workbook_queue(
+    calibration_data: dict[str, Path],
+) -> list[dict[str, str]]:
+    """Build a workbook queue in a deliberately scrambled order."""
+    manifest = load_json(calibration_data["manifest"])
+    audit_ids = set(load_json(calibration_data["audit"])["ids"])
+    items = [
+        {
+            "id": str(example["id"]),
+            "source_split": str(example["source_split"]),
+            "category": str(example["category"]),
+            "source_category": str(example["source_category"]),
+            "source_input": str(example["source_input"]),
+            "audit": str(example["id"]) in audit_ids,
+            "inclusion_status": str(
+                example.get("inclusion_status", "not_applicable"),
+            ),
+        }
+        for example in manifest["examples"]
+    ]
+    return items[::-1]
+
+
+def test_workbook_rows_copy_candidate_summary_by_id(
+    calibration_data: dict[str, Path],
+) -> None:
+    """Prefilled text follows case ID, not candidate-record position."""
+    manifest = load_json(calibration_data["manifest"])
+    candidates = load_json(calibration_data["candidates"])
+    by_id = build_candidate_summaries_by_id(manifest, candidates)
+
+    rows = build_workbook_rows(workbook_queue(calibration_data), by_id)
+    original_records = [
+        str(record["actual_summary"]) for record in candidates["records"]
+    ]
+
+    # Queue order is reversed, so position-based copying would mismatch.
+    assert rows[0]["actual_summary"] != original_records[0]
+    for row in rows:
+        assert row["actual_summary"] == by_id[str(row["id"])]
+        assert row["actual_summary"] == (
+            f"Candidate summary for {row['id']}."
+        )
+
+
+def test_workbook_rows_never_fill_reviewer_fields(
+    calibration_data: dict[str, Path],
+) -> None:
+    """Reviewer-owned fields stay blank in every primary and secondary row."""
+    manifest = load_json(calibration_data["manifest"])
+    candidates = load_json(calibration_data["candidates"])
+    by_id = build_candidate_summaries_by_id(manifest, candidates)
+
+    rows = build_workbook_rows(workbook_queue(calibration_data), by_id)
+
+    assert len(rows) == 4
+    assert all(
+        row[field] == ""
+        for row in rows
+        for field in REVIEWER_FIELDS
+    )
+    assert sum(
+        row["annotation_pass"] == "secondary" for row in rows
+    ) == 1
+    assert sum(
+        row["is_double_annotated"] == "true" for row in rows
+    ) == 2
+
+
+def test_workbook_builder_rejects_failed_candidate(
+    calibration_data: dict[str, Path],
+) -> None:
+    """A failed candidate generation must block workbook build."""
+    manifest = load_json(calibration_data["manifest"])
+    candidates = load_json(calibration_data["candidates"])
+    candidates["records"][0]["status"] = "failed"
+    with pytest.raises(ValueError, match="Candidate generation failed"):
+        build_candidate_summaries_by_id(manifest, candidates)
+
+
+def test_workbook_builder_rejects_missing_candidate(
+    calibration_data: dict[str, Path],
+) -> None:
+    """A manifest case without any recorded candidate must block the build."""
+    manifest = load_json(calibration_data["manifest"])
+    candidates = load_json(calibration_data["candidates"])
+    candidates["records"] = candidates["records"][:2]
+    with pytest.raises(ValueError, match="No candidate outputs"):
+        build_candidate_summaries_by_id(manifest, candidates)

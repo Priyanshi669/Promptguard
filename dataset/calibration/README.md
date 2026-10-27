@@ -178,10 +178,11 @@ Do penalize:
   exact agreement is below `0.70`, pause and recalibrate the annotators
   before continuing.
 
-The reviewer package is already expanded to 120 blank rows: one `primary`
+The reviewer package is already expanded to 120 rows: one `primary`
 row for every case and a `secondary` row for each of the 20 audit cases.
-Before scoring, populate `actual_summary` with the raw production candidate
-summary; do not hand-edit it. Reviewers fill `annotator_id`,
+The builder pre-populates `actual_summary` with the raw production
+candidate summary, copied mechanically from `candidate_outputs.json` by
+case ID; do not hand-edit it. Reviewers fill `annotator_id`,
 `annotated_at`, `expected_summary`, and `human_score`. Do not copy another
 reviewer's score into the secondary row. The adjudicated score is written
 only to the final calibration file.
