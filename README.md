@@ -153,8 +153,12 @@ The v1 plan selects 100 unlabeled BANKING77 cases, two per prompt category,
 and requires human-written references plus 20% double annotation. Current
 status: the sample manifest is approved (the `card_pin` inclusion review is
 complete, recorded in `v1/manifest_validation.json`), candidate outputs are
-generated in `v1/candidate_outputs.json`, and the 120-row reviewer workbook
-(`v1/annotation_workbook.csv`) is blank and awaiting human annotation.
+generated in `v1/candidate_outputs.json`, and all 100 primary reviewer rows
+of the 120-row workbook (`v1/annotation_workbook.csv`) are human-annotated
+(annotator 1; 6 rows flagged with similarity warnings for the borderline
+guard). The 20 double-annotated secondary rows are still pending, so the
+strict validator exits 1 with exactly 100 pending-field errors and
+calibration execution remains blocked until that secondary pass lands.
 
 Validate the workbook at any time; it exits `0` only when annotations are
 complete and mechanically consistent with the recorded candidates:

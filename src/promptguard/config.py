@@ -49,6 +49,12 @@ class Settings(BaseSettings):
 
     nvidia_seed: int | None = Field(default=None, ge=0)
 
+    api_token: str | None = Field(default=None, min_length=12)
+
+    api_cors_origins: str = "http://localhost:5173"
+
+    api_max_concurrent_runs: int = Field(default=1, ge=1, le=32)
+
     slack_webhook_url: str | None = Field(default=None)
 
     model_config = SettingsConfigDict(

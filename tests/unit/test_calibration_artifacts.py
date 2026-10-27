@@ -161,16 +161,25 @@ def test_annotation_workbook_carries_candidate_text_and_blanks_reviewers() -> No
         for row in rows
         if row["annotation_pass"] == "secondary"
     } == set(audit["ids"])
+    # Reviewer state after the annotator-1 batch (2026-10-27): every
+    # primary row is scored; the 20 secondary rows still await the
+    # independent second annotator.
+    scored_passes = {
+        row["annotation_pass"]
+        for row in rows
+        if (row["expected_summary"] or row["human_score"]).strip()
+    }
+    assert scored_passes == {"primary"}
     assert all(
         row[field] == ""
         for row in rows
+        if row["annotation_pass"] == "secondary"
         for field in (
             "expected_summary",
             "human_score",
             "annotator_id",
             "annotated_at",
             "confidence",
-            "notes",
         )
     )
     candidates = load_json(CALIBRATION_DIR / "candidate_outputs.json")
