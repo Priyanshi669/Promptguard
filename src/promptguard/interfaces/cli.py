@@ -21,6 +21,7 @@ from promptguard.application.reporting_service import ReportingService
 from promptguard.application.run_service import EvaluationRunService
 from promptguard.config import get_settings
 from promptguard.domain.models import EvaluationReport, GoldenTestCase
+from promptguard.domain.statistics import BootstrapConfig
 from promptguard.domain.thresholds import RegressionThresholds
 from promptguard.infrastructure.dataset.json_repository import JsonDatasetRepository
 from promptguard.infrastructure.evaluation.deepeval_metrics import DeepEvalSummaryMetric
@@ -28,6 +29,7 @@ from promptguard.infrastructure.evaluation.evaluator_config import (
     build_evaluator_config,
 )
 from promptguard.infrastructure.llm.client import NVIDIAClient
+from promptguard.infrastructure.llm.errors import describe_provider_error
 from promptguard.infrastructure.notifications.slack import NoopNotifier, SlackNotifier
 from promptguard.infrastructure.path_safety import validate_identifier
 from promptguard.infrastructure.persistence.repositories import (
@@ -234,6 +236,11 @@ async def _run(argv: list[str] | None = None) -> int:
                 thresholds=_build_thresholds(args),
                 baseline_run_id=args.baseline,
                 eval_config=eval_config,
+                bootstrap=BootstrapConfig(
+                    seed=settings.bootstrap_seed,
+                    resamples=settings.bootstrap_resamples,
+                    confidence_level=settings.bootstrap_confidence_level,
+                ),
             )
     except TimeoutError as exc:
         raise RuntimeError(
@@ -284,6 +291,7 @@ def run() -> None:
     try:
         exit_code = asyncio.run(_run())
     except Exception as exc:
-        print(f"PromptGuard failed: {exc}")
+        api_key = getattr(get_settings(), "nvidia_api_key", None)
+        print(f"PromptGuard failed: {describe_provider_error(exc, api_key)}")
         raise SystemExit(2) from exc
     raise SystemExit(exit_code)

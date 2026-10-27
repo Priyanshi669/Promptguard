@@ -9,8 +9,11 @@ from pydantic import (
     model_validator,
 )
 
+from promptguard.domain.classification import ClassificationMetrics
 from promptguard.domain.drift import CategoryDriftResult
+from promptguard.domain.paired import PairedAnalysis
 from promptguard.domain.regression import EvaluationComparison, RegressionResult
+from promptguard.domain.statistics import ConfidenceIntervals
 from promptguard.domain.thresholds import RegressionThresholds
 from promptguard.domain.types import NonEmptyStr
 
@@ -192,6 +195,9 @@ class EvaluationReport(BaseModel):
     )
     schema_version: int = Field(default=1, ge=1)
     results: list[EvaluationResult]
+    classification: ClassificationMetrics | None = None
+    confidence_intervals: ConfidenceIntervals | None = None
+    paired_analysis: PairedAnalysis | None = None
     eval_config_hash: str | None = None
     evaluator: dict[str, Any] | None = None
     thresholds: RegressionThresholds | None = None
@@ -250,6 +256,59 @@ class EvaluationReport(BaseModel):
                 f"the number of results ({len(self.results)})."
             )
             return issues
+
+        if self.classification is not None and not math.isclose(
+            self.classification.accuracy,
+            self.category_accuracy,
+            rel_tol=1e-9, abs_tol=1e-9,
+        ):
+            issues.append(
+                "Current run classification.accuracy is inconsistent with "
+                "category_accuracy."
+            )
+
+        intervals = self.confidence_intervals
+        if intervals is not None:
+            if intervals.sample_count != self.case_count:
+                issues.append(
+                    f"Current run confidence_intervals.sample_count "
+                    f"({intervals.sample_count}) does not match the number "
+                    f"of results ({self.case_count})."
+                )
+            if intervals.accuracy_interval is not None and not math.isclose(
+                intervals.accuracy_interval.point_estimate,
+                self.category_accuracy,
+                rel_tol=1e-9, abs_tol=1e-9,
+            ):
+                issues.append(
+                    "Current run confidence_intervals.accuracy_interval "
+                    "point estimate is inconsistent with category_accuracy."
+                )
+            if (
+                intervals.summary_score_interval is not None
+                and not math.isclose(
+                    intervals.summary_score_interval.point_estimate,
+                    self.average_summary_score,
+                    rel_tol=1e-9, abs_tol=1e-9,
+                )
+            ):
+                issues.append(
+                    "Current run confidence_intervals.summary_score_interval "
+                    "point estimate is inconsistent with "
+                    "average_summary_score."
+                )
+
+        paired = self.paired_analysis
+        if (
+            paired is not None
+            and paired.unavailable_reason is None
+            and paired.matched_cases != self.case_count
+        ):
+            issues.append(
+                f"Current run paired_analysis.matched_cases "
+                f"({paired.matched_cases}) does not match the number "
+                f"of results ({self.case_count})."
+            )
 
         if result_issues or aggregate_metric_issues:
             return issues

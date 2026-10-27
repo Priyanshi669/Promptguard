@@ -19,7 +19,9 @@ from promptguard.application.drift_service import DriftService
 from promptguard.application.evaluation_service import EvaluationService
 from promptguard.application.reporting_service import ReportingService
 from promptguard.domain.models import EvaluationReport, EvaluationResult, GoldenTestCase
+from promptguard.domain.paired import paired_baseline_analysis
 from promptguard.domain.regression import EvaluationComparison
+from promptguard.domain.statistics import BootstrapConfig
 from promptguard.domain.thresholds import RegressionThresholds
 
 LATEST_BASELINE = "latest"
@@ -80,6 +82,7 @@ class EvaluationRunService:
         thresholds: RegressionThresholds | None = None,
         baseline_run_id: str | None = None,
         eval_config: dict[str, Any] | None = None,
+        bootstrap: BootstrapConfig | None = None,
     ) -> EvaluationRunOutcome:
         """Execute the evaluation pipeline and return its outcome."""
         results = await self._evaluation_service.evaluate_dataset(
@@ -102,6 +105,7 @@ class EvaluationRunService:
             ),
             evaluator=self._extract_evaluator(eval_config),
             thresholds=thresholds,
+            bootstrap=bootstrap,
         )
 
         baseline_requested = baseline_run_id is not None
@@ -131,6 +135,11 @@ class EvaluationRunService:
                 report.baseline_run_id = baseline.run_id
                 report.comparison = comparison
                 report.drift = self._drift_service.compare(baseline, report)
+                report.paired_analysis = paired_baseline_analysis(
+                    baseline_results=baseline.results,
+                    candidate_results=report.results,
+                    bootstrap=bootstrap,
+                )
                 baseline_results_dict = {
                     result.test_case_id: result for result in baseline.results
                 }

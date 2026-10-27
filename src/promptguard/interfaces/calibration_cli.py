@@ -18,6 +18,7 @@ from promptguard.infrastructure.evaluation.deepeval_metrics import (
 from promptguard.infrastructure.evaluation.evaluator_config import (
     build_evaluator_config,
 )
+from promptguard.infrastructure.llm.errors import describe_provider_error
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -105,6 +106,10 @@ def run() -> None:
     try:
         exit_code = asyncio.run(_run())
     except Exception as exc:
-        print(f"PromptGuard calibration failed: {exc}")
+        api_key = getattr(get_settings(), "nvidia_api_key", None)
+        print(
+            "PromptGuard calibration failed: "
+            f"{describe_provider_error(exc, api_key)}"
+        )
         raise SystemExit(2) from exc
     raise SystemExit(exit_code)

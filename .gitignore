@@ -45,6 +45,10 @@ data/
 runs/
 reports/*
 !reports/execution-evidence
+!reports/evidence-2026-10-26/
+
+# Local agent session data
+.agents/
 
 .test-tmp/
 .uv-cache/

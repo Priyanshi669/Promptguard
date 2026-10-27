@@ -5,6 +5,13 @@ from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from promptguard.domain.statistics import (
+    DEFAULT_BOOTSTRAP_SEED,
+    DEFAULT_CONFIDENCE_LEVEL,
+    DEFAULT_RESAMPLES,
+)
+from promptguard.infrastructure.llm.pool import ProviderSpec
+
 
 class Settings(BaseSettings):
     """Application configuration loaded from environment variables."""
@@ -18,9 +25,25 @@ class Settings(BaseSettings):
 
     nvidia_model: str = Field(..., min_length=1)
 
-    nvidia_request_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
+    nvidia_request_timeout_seconds: float = Field(default=30.0, gt=0, le=60)
+
+    nvidia_min_request_interval_seconds: float = Field(
+        default=1.0, ge=0, le=60,
+    )
+
+    provider_pool: list[ProviderSpec] | None = Field(default=None)
 
     evaluation_timeout_seconds: float = Field(default=900.0, gt=0, le=1800)
+
+    bootstrap_seed: int = Field(default=DEFAULT_BOOTSTRAP_SEED)
+
+    bootstrap_resamples: int = Field(
+        default=DEFAULT_RESAMPLES, ge=1, le=100000,
+    )
+
+    bootstrap_confidence_level: float = Field(
+        default=DEFAULT_CONFIDENCE_LEVEL, gt=0, lt=1,
+    )
 
     nvidia_temperature: float | None = Field(default=None, ge=0, le=2)
 

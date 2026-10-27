@@ -1,4 +1,4 @@
-"""NVIDIA-backed LLM client implementation."""
+"""NVIDIA-backed LLM client implementation with provider failover."""
 
 import json
 import math
@@ -13,15 +13,27 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt
 from promptguard.config import get_settings
 from promptguard.domain.models import LLMOutput, LLMResponse
 from promptguard.infrastructure.llm.contract import LLMClient
+from promptguard.infrastructure.llm.pool import (
+    FAIL_OVER_EXCEPTIONS,
+    ProviderRotator,
+    ProviderSpec,
+    RateLimiter,
+    build_provider_pool,
+)
 from promptguard.infrastructure.llm.retry import (
     LLM_RETRY_ATTEMPTS,
     LLM_RETRY_WAIT,
-    RETRYABLE_EXCEPTIONS,
+    TRANSIENT_EXCEPTIONS,
 )
 
 
 class NVIDIAClient(LLMClient):
-    """LLM client using NVIDIA's OpenAI-compatible API."""
+    """LLM client using OpenAI-compatible APIs with provider failover.
+
+    Providers are tried in configured order. Rate limits and credential
+    rejections fail over to the next provider; transient transport errors
+    are retried in place first.
+    """
 
     def __init__(
         self,
@@ -30,34 +42,53 @@ class NVIDIAClient(LLMClient):
         """Initialize the NVIDIA client."""
         settings = get_settings()
 
-        self._client = client or AsyncOpenAI(
-            api_key=settings.nvidia_api_key,
-            base_url=settings.nvidia_base_url,
-            timeout=settings.nvidia_request_timeout_seconds,
-            max_retries=0,
+        if client is not None:
+            providers = [
+                ProviderSpec(
+                    name="injected",
+                    base_url=str(getattr(settings, "nvidia_base_url", "injected")),
+                    api_key=str(getattr(settings, "nvidia_api_key", "injected")),
+                    model=str(settings.nvidia_model),
+                ),
+            ]
+            self._clients = [client]
+        else:
+            pool = build_provider_pool(settings)
+            providers = pool
+            self._clients = [
+                AsyncOpenAI(
+                    api_key=spec.api_key,
+                    base_url=spec.base_url,
+                    timeout=settings.nvidia_request_timeout_seconds,
+                    max_retries=0,
+                )
+                for spec in pool
+            ]
+
+        self._providers = providers
+        min_interval = getattr(
+            settings, "nvidia_min_request_interval_seconds", 1.0,
         )
-        self._model = settings.nvidia_model
-        self._temperature = getattr(settings, "nvidia_temperature", None)
-        self._seed = getattr(settings, "nvidia_seed", None)
+        self._limiters = [
+            RateLimiter(float(min_interval)) for _ in providers
+        ]
 
     @retry(
-        retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
+        retry=retry_if_exception_type(TRANSIENT_EXCEPTIONS),
         wait=LLM_RETRY_WAIT,
         stop=stop_after_attempt(LLM_RETRY_ATTEMPTS),
         reraise=True,
     )
-    async def _call_llm(
+    async def _attempt(
         self,
+        client: AsyncOpenAI,
+        model: str,
         system_prompt: str,
         user_input: str,
     ) -> tuple[LLMOutput, int, int, float | None]:
-        """Call the API, retrying only transient transport/provider failures.
-
-        Invalid or empty model outputs are deterministic and surface directly
-        as ``ValueError`` without another provider call.
-        """
+        """Call one provider, retrying only transient transport failures."""
         request: dict[str, Any] = {
-            "model": self._model,
+            "model": model,
             "messages": [
                 {
                     "role": "system",
@@ -70,12 +101,15 @@ class NVIDIAClient(LLMClient):
             ],
             "response_format": {"type": "json_object"},
         }
-        if self._temperature is not None:
-            request["temperature"] = self._temperature
-        if self._seed is not None:
-            request["seed"] = self._seed
+        settings = get_settings()
+        temperature = getattr(settings, "nvidia_temperature", None)
+        seed = getattr(settings, "nvidia_seed", None)
+        if temperature is not None:
+            request["temperature"] = temperature
+        if seed is not None:
+            request["seed"] = seed
 
-        response = await self._client.chat.completions.create(**request)
+        response = await client.chat.completions.create(**request)
 
         content = response.choices[0].message.content
 
@@ -98,6 +132,35 @@ class NVIDIAClient(LLMClient):
         cost_usd = self._extract_usage_cost(usage)
 
         return output, input_tokens, output_tokens, cost_usd
+
+    async def _call_llm(
+        self,
+        system_prompt: str,
+        user_input: str,
+    ) -> tuple[LLMOutput, int, int, float | None]:
+        """Call the pool in order, failing over on quota/credential errors.
+
+        Invalid or empty model outputs are deterministic and surface
+        directly as ``ValueError`` without another provider call.
+        """
+        rotator = ProviderRotator(self._providers)
+        while True:
+            spec = rotator.active
+            index = rotator.index
+            await self._limiters[index].acquire_async()
+            try:
+                return await self._attempt(
+                    self._clients[index],
+                    spec.model,
+                    system_prompt,
+                    user_input,
+                )
+            except FAIL_OVER_EXCEPTIONS as exc:
+                rotator.fail_over(f"{type(exc).__name__}")
+            except TRANSIENT_EXCEPTIONS as exc:
+                if not rotator.has_next:
+                    raise
+                rotator.fail_over(f"{type(exc).__name__}")
 
     @staticmethod
     def _extract_usage_cost(usage: Any) -> float | None:

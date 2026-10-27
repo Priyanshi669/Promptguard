@@ -1,0 +1,33 @@
+﻿git commit: cdf2666e6dd8108931ce6a26a54fc321e0d84a21 (release-candidate changes uncommitted on top)
+date: 2026-10-26T23:37:24.0029573+05:30
+=== pytest ===
+........................................................................ [ 14%]
+........................................................................ [ 29%]
+........................................................................ [ 44%]
+........................................................................ [ 59%]
+........................................................................ [ 74%]
+....................................s................................... [ 89%]
+.....................................................                    [100%]Running teardown with pytest sessionfinish...
+
+Test 
+tests/unit/test_path_safety.py::test_resolve_identifier_path_rejects_symlink_es
+cape was skipped. Reason: 
+('C:\\project\\Promptguard\\tests\\unit\\test_path_safety.py', 63, 'Skipped: 
+symlink creation is not permitted')
+484 passed, 1 skipped in 14.68s
+
+=== ruff ===
+All checks passed!
+
+=== mypy ===
+Success: no issues found in 43 source files
+
+=== uv lock --check ===
+uv : Resolved 90 packages in 1ms
+At line:1 char:602
++ ... uv lock --check ===" | Add-Content $log; uv lock --check 2>&1 | Out-S ...
++                                              ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Resolved 90 packages in 1ms:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+

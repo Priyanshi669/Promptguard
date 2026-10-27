@@ -1,0 +1,41 @@
+# Verified demo transcript: PromptGuard end-to-end (PASS then FAIL)
+
+Provenance: captured from the verified `scripts/run_demo.ps1 -SkipChecks`
+execution on 2026-10-26 (runs edacc7cd / 5802f78f), single NVIDIA
+provider, explicit `NVIDIA_REQUEST_TIMEOUT_SECONDS=60`. A later full
+recapture on the final tree is documented in
+`failover-demo-output.txt`; a clean single-provider quality run requires
+provider quota to reset (see limitations.md).
+
+=== Step 1: evaluate 10 golden cases against the latest baseline ===
+Gate: category accuracy >= 0.7, summary score >= 3.0, latency <= 60s
+
+PromptGuard Evaluation Report
+Run ID: edacc7cd-837a-48e5-aeb2-dcee201453b1
+Timestamp: 2026-10-26T15:20:00.207971+00:00
+Cases evaluated: 10
+Category accuracy: 80.00%
+Average summary score: 4.60/5
+Average latency: 5628.57ms
+Input tokens: 5397
+Output tokens: 1790
+Eval config hash: aafd707c401b07889b6000e07b52a76c0c2c4e2a79d9dc32ed927265d5234868
+Baseline run: 7f9cc398-76c1-44fc-8fb8-2f32643f8454
+Regression status: PASS
+Threshold violations: none
+(exit code 0)
+
+=== Step 3: demonstrate the gate detecting a quality breach ===
+Gate: minimum_category_accuracy 1.0 (unreachable for a model scoring 80%)
+
+PromptGuard Evaluation Report
+Run ID: 5802f78f-e786-499d-8370-957bbaa21374
+Timestamp: 2026-10-26T15:23:25.728506+00:00
+Category accuracy: 80.00%
+Regression status: FAIL
+Threshold violations:
+  category_accuracy: category_accuracy is below its minimum. (actual=0.8000, threshold=1.0000)
+As expected: the quality gate FAILED the run (exit 1).
+
+=== Demo complete ===
+PASS path: exit 0. FAIL path: exit 1. Reports: runs\

@@ -16,6 +16,7 @@ from tenacity.wait import wait_none
 
 from promptguard.domain.models import LLMOutput
 from promptguard.infrastructure.llm.client import NVIDIAClient
+from promptguard.infrastructure.llm.pool import ProviderSpec, RateLimiter
 
 
 @pytest.fixture
@@ -26,8 +27,10 @@ def mock_settings() -> MagicMock:
     settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
     settings.nvidia_model = "test-model"
     settings.nvidia_request_timeout_seconds = 10.0
+    settings.nvidia_min_request_interval_seconds = 0
     settings.nvidia_temperature = None
     settings.nvidia_seed = None
+    settings.provider_pool = None
     return settings
 
 
@@ -47,8 +50,8 @@ def test_client_owns_retry_budget_and_timeout(
     ):
         client = NVIDIAClient()
 
-    assert client._client.max_retries == 0
-    assert client._client.timeout == 10.0
+    assert client._clients[0].max_retries == 0
+    assert client._clients[0].timeout == 10.0
 
 
 @pytest.mark.asyncio
@@ -84,7 +87,7 @@ async def test_total_http_attempts_match_application_retry_budget(
 
         with (
             patch.object(
-                NVIDIAClient._call_llm.retry,
+                NVIDIAClient._attempt.retry,
                 "wait",
                 wait_none(),
             ),
@@ -629,38 +632,55 @@ def rate_limit_error() -> RateLimitError:
 
 
 @pytest.mark.asyncio
-async def test_generate_retries_on_rate_limit_error(
+async def test_generate_fails_over_on_rate_limit_error(
     mock_settings: MagicMock,
-    mock_openai_client: AsyncMock,
 ) -> None:
-    """Client should retry when the provider returns HTTP 429."""
-    mock_response = MagicMock()
-    mock_response.choices = [
+    """A 429 must fail over to the next provider instead of retrying in place."""
+    exhausted_client = AsyncMock()
+    exhausted_client.chat.completions.create.side_effect = rate_limit_error()
+
+    healthy_client = AsyncMock()
+    response = MagicMock()
+    response.choices = [
         MagicMock(
             message=MagicMock(
                 content='{"category": "billing", "summary": "Refund request."}'
             )
         )
     ]
-    mock_response.usage = MagicMock(prompt_tokens=10, completion_tokens=5)
-
-    mock_openai_client.chat.completions.create.side_effect = [
-        rate_limit_error(),
-        mock_response,
-    ]
+    response.usage = MagicMock(prompt_tokens=10, completion_tokens=5)
+    healthy_client.chat.completions.create.return_value = response
 
     with patch(
         "promptguard.infrastructure.llm.client.get_settings",
         return_value=mock_settings,
     ):
-        client = NVIDIAClient(client=mock_openai_client)
+        client = NVIDIAClient(client=exhausted_client)
+        client._providers = [
+            ProviderSpec(
+                name="primary",
+                base_url="https://primary.example/v1",
+                api_key="k1",
+                model="test-model",
+            ),
+            ProviderSpec(
+                name="fallback",
+                base_url="https://fallback.example/v1",
+                api_key="k2",
+                model="test-model",
+            ),
+        ]
+        client._clients = [exhausted_client, healthy_client]
+        client._limiters = [RateLimiter(0), RateLimiter(0)]
+
         result = await client.generate(
             system_prompt="Classify.",
             user_input="I want a refund.",
         )
 
     assert result.output.category == "billing"
-    assert mock_openai_client.chat.completions.create.await_count == 2
+    assert exhausted_client.chat.completions.create.await_count == 1
+    assert healthy_client.chat.completions.create.await_count == 1
 
 
 @pytest.mark.asyncio

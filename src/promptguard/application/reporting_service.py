@@ -3,9 +3,14 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from promptguard.domain.classification import classification_metrics
 from promptguard.domain.models import (
     EvaluationReport,
     EvaluationResult,
+)
+from promptguard.domain.statistics import (
+    BootstrapConfig,
+    confidence_intervals,
 )
 from promptguard.domain.thresholds import RegressionThresholds
 
@@ -22,6 +27,7 @@ class ReportingService:
         eval_config_hash: str | None = None,
         thresholds: RegressionThresholds | None = None,
         evaluator: dict[str, object] | None = None,
+        bootstrap: BootstrapConfig | None = None,
     ) -> EvaluationReport:
         """Aggregate a complete run, including an explicitly empty run."""
         case_count = len(results)
@@ -54,6 +60,10 @@ class ReportingService:
             total_input_tokens=sum(result.input_tokens for result in results),
             total_output_tokens=sum(result.output_tokens for result in results),
             total_cost_usd=self._aggregate_cost_usd(results),
+            classification=classification_metrics(results),
+            confidence_intervals=(
+                confidence_intervals(results, bootstrap) if bootstrap else None
+            ),
             results=results,
         )
 
