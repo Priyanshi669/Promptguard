@@ -84,9 +84,17 @@ export function CalibrationPage() {
   const strict = o.strict_validation;
 
   return (
-    <div>
-      <h1>Calibration workspace</h1>
-      <p className="notes-list" style={{ marginBottom: "1rem" }}>
+    <div className="flex flex-col w-full">
+      <div className="w-full bg-surface-container-lowest px-gutter py-space-sm flex flex-wrap items-center justify-between gap-space-md">
+        <span className="font-code-sm text-code-sm text-on-surface font-medium">
+          Calibration workspace
+        </span>
+        <span className="font-code-sm text-code-sm text-outline">
+          Read-only by design (ADR-0002)
+        </span>
+      </div>
+      <div className="w-full p-gutter flex flex-col gap-space-md">
+      <p className="notes-list">
         {overview.note}
       </p>
 
@@ -247,26 +255,29 @@ export function CalibrationPage() {
                 ))}
               </tbody>
             </table>
-            <p>
-              <button
-                type="button"
-                disabled={page === 0}
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-              >
-                ← Previous
-              </button>{" "}
-              <button
-                type="button"
-                disabled={(page + 1) * PAGE_SIZE >= rows.total}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next →
-              </button>{" "}
-              <span className="notes-list">Page {page + 1}</span>
-            </p>
+        <div className="flex items-center gap-space-sm">
+          <button
+            type="button"
+            className="px-2 py-0.5 rounded bg-surface-container text-outline hover:text-on-surface disabled:opacity-50"
+            disabled={page === 0}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+          >
+            ← Previous
+          </button>
+          <button
+            type="button"
+            className="px-2 py-0.5 rounded bg-surface-container text-on-surface hover:bg-surface-container-high disabled:opacity-50"
+            disabled={(page + 1) * PAGE_SIZE >= rows.total}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next →
+          </button>
+            <span className="notes-list">Page {page + 1}</span>
+          </div>
           </>
         ) : null}
       </section>
+      </div>
     </div>
   );
 }

@@ -196,8 +196,27 @@ Explicit baseline IDs still load their requested report. Aggregate accuracy,
 score, latency, and token totals are
 validated against the stored case results, and inconsistent evidence is
 INCONCLUSIVE rather than trusted. Slack notification is enabled only when
-`SLACK_WEBHOOK_URL` is set in `.env`; delivery failures are reported as
-warnings and do not change the quality-gate decision.
+`SLACK_WEBHOOK_URL` is set in `.env` (and `SLACK_NOTIFICATIONS_ENABLED`
+is not `false`); delivery failures are reported as warnings and do not
+change the quality-gate decision.
+
+Drift alerts are a distinct, opt-in notification. When a run has a
+compatible baseline, the existing category-drift measurement (total
+variation distance) exceeds a run-level `--max-category-drift`
+(`max_category_drift` in the API; 0-1), and the run's
+`SLACK_NOTIFICATIONS_ENABLED` is on, the Slack message becomes a
+structured drift alert: candidate and baseline run IDs, drifted category
+shares with their deltas, comparison context, gate status, and a report
+link when `SLACK_REPORT_URL_PREFIX` is configured. Inconclusive
+comparisons, missing baselines, and missing thresholds never send a
+confirmed-drift alert, quality-gate failures are not treated as drift,
+and repeated processing of an already-delivered drift event is skipped
+via the delivery status persisted on the report. Slack delivery retries
+transient failures up to `SLACK_MAX_ATTEMPTS` (default 3) with a
+`SLACK_TIMEOUT_SECONDS` (default 10) request timeout. Note the missing
+capability: there is no persistent server-wide drift threshold — the
+condition is configured per run, and percent-based or latency drift
+alerts do not exist yet.
 
 The application retry policy is the only retry layer: SDK retries are
 disabled. Transient transport failures (timeouts, connection errors, and

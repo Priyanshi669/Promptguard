@@ -57,6 +57,26 @@ class Settings(BaseSettings):
 
     slack_webhook_url: str | None = Field(default=None)
 
+    slack_notifications_enabled: bool = Field(
+        default=True,
+        description="Explicit opt-out switch for Slack notifications.",
+    )
+
+    slack_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
+
+    slack_max_attempts: int = Field(
+        default=3, ge=1, le=5,
+        description="Initial delivery attempt plus bounded retries.",
+    )
+
+    slack_report_url_prefix: str | None = Field(
+        default=None,
+        description=(
+            "Dashboard base URL (e.g. https://promptguard.example.com); "
+            "when set, drift alerts link to {prefix}/runs/{run_id}."
+        ),
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -34,6 +34,10 @@ from promptguard.infrastructure.evaluation.evaluator_config import (
     build_evaluator_config,
 )
 from promptguard.infrastructure.llm.client import NVIDIAClient
+from promptguard.infrastructure.notifications.slack import (
+    NoopNotifier,
+    SlackNotifier,
+)
 from promptguard.infrastructure.path_safety import validate_identifier
 from promptguard.infrastructure.persistence.repositories import (
     JsonEvaluationRunRepository,
@@ -46,6 +50,24 @@ from promptguard.infrastructure.reporting.html_renderer import (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+
+def build_notifier(settings: Settings) -> Notifier:
+    """Return the configured notifier from application settings.
+
+    Unconfigured or explicitly disabled Slack settings produce the safe
+    no-op notifier; evaluation runs continue to function normally. The
+    webhook URL never leaves this module.
+    """
+    if not settings.slack_notifications_enabled:
+        return NoopNotifier()
+    if not settings.slack_webhook_url:
+        return NoopNotifier()
+    return SlackNotifier(
+        settings.slack_webhook_url,
+        timeout_seconds=settings.slack_timeout_seconds,
+        max_attempts=settings.slack_max_attempts,
+    )
 
 
 def extract_system_prompt(prompt_config: dict[str, Any]) -> str:
@@ -138,5 +160,6 @@ def build_default_run_service(
         repository=repository,
         formatter=TextReportFormatter(),
         notifier=notifier,
+        drift_alert_url_prefix=settings.slack_report_url_prefix,
     )
     return run_service, system_prompt, test_cases, eval_config

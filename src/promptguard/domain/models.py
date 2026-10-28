@@ -176,6 +176,29 @@ class EvaluationResult(BaseModel):
         return self
 
 
+class SlackAlertRecord(BaseModel):
+    """Delivery outcome of one drift alert notification attempt."""
+
+    baseline_run_id: NonEmptyStr
+    status: Literal["delivered", "failed"]
+    error: str | None = Field(
+        default=None,
+        description=(
+            "Sanitized failure type name when delivery failed; never "
+            "contains the webhook URL, tokens, or request bodies."
+        ),
+    )
+    recorded_at: datetime
+
+    @field_validator("recorded_at")
+    @classmethod
+    def _normalize_recorded_at(cls, value: datetime) -> datetime:
+        """Require an explicit timezone and normalize it to UTC."""
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("recorded_at must include timezone information")
+        return value.astimezone(UTC)
+
+
 class EvaluationReport(BaseModel):
     """Complete, infrastructure-independent record of an evaluation run."""
 
@@ -205,6 +228,7 @@ class EvaluationReport(BaseModel):
     comparison: EvaluationComparison | None = None
     regression: RegressionResult | None = None
     drift: CategoryDriftResult | None = None
+    slack_alert: SlackAlertRecord | None = None
 
     @field_validator("timestamp")
     @classmethod

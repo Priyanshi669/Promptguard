@@ -621,3 +621,40 @@ def test_lifespan_drains_run_manager_on_shutdown() -> None:
 
     # Sanity: the real manager exposes the awaited signature (typing seam).
     assert hasattr(app_module.RunManager, "shutdown")
+
+
+def test_thresholds_from_request_maps_all_gate_fields() -> None:
+    from promptguard.domain.thresholds import RegressionThresholds
+    from promptguard.interfaces.api.runner import thresholds_from_request
+    from promptguard.interfaces.api.schemas import RunCreateRequest
+
+    request = RunCreateRequest(
+        min_category_accuracy=0.9,
+        min_summary_score=3.5,
+        max_latency_ms=8000.0,
+        max_category_accuracy_drop=0.05,
+        max_summary_score_drop=0.25,
+        max_category_accuracy_drop_pct=5.0,
+        max_summary_score_drop_pct=10.0,
+        max_category_drift=0.2,
+    )
+    thresholds = thresholds_from_request(request)
+    assert isinstance(thresholds, RegressionThresholds)
+    assert thresholds == RegressionThresholds(
+        minimum_category_accuracy=0.9,
+        minimum_summary_score=3.5,
+        maximum_average_latency_ms=8000.0,
+        maximum_category_accuracy_drop=0.05,
+        maximum_summary_score_drop=0.25,
+        maximum_category_accuracy_drop_pct=5.0,
+        maximum_summary_score_drop_pct=10.0,
+        maximum_category_drift=0.2,
+    )
+
+
+def test_thresholds_from_request_all_none_returns_none() -> None:
+    from promptguard.interfaces.api.runner import thresholds_from_request
+    from promptguard.interfaces.api.schemas import RunCreateRequest
+
+    request = RunCreateRequest(prompt_version="v1", limit=3)
+    assert thresholds_from_request(request) is None

@@ -183,6 +183,18 @@ async def test_slack_notifier_posts_to_webhook() -> None:
         recorded["data"] = request.data
         recorded["timeout"] = timeout
 
+        class _FakeResponse:
+            def read(self) -> bytes:
+                return b"ok"
+
+            def __enter__(self) -> "_FakeResponse":  # noqa: PYI034
+                return self
+
+            def __exit__(self, *exc_types: object) -> bool:
+                return False
+
+        return _FakeResponse()
+
     with patch.object(urllib.request, "urlopen", fake_urlopen):
         await SlackNotifier("https://hooks.example.com/tok").notify("run done")
 

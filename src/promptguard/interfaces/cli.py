@@ -8,7 +8,7 @@ from typing import Any
 
 from promptguard.application.contracts import Notifier
 from promptguard.application.run_service import EvaluationRunService
-from promptguard.application.wiring import build_default_run_service
+from promptguard.application.wiring import build_default_run_service, build_notifier
 from promptguard.config import get_settings
 from promptguard.domain.models import EvaluationReport, GoldenTestCase
 from promptguard.domain.statistics import BootstrapConfig
@@ -16,7 +16,6 @@ from promptguard.domain.thresholds import RegressionThresholds
 from promptguard.infrastructure.evaluation.deepeval_metrics import DeepEvalSummaryMetric
 from promptguard.infrastructure.llm.client import NVIDIAClient
 from promptguard.infrastructure.llm.errors import describe_provider_error
-from promptguard.infrastructure.notifications.slack import NoopNotifier, SlackNotifier
 from promptguard.infrastructure.path_safety import validate_identifier
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -69,6 +68,13 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--max-summary-score-drop-pct", type=float, default=None,
         help="Fail when average summary score drops by more than this percentage.",
     )
+    parser.add_argument(
+        "--max-category-drift", type=float, default=None,
+        help=(
+            "Slack-alert when category-distribution drift (total "
+            "variation distance to the baseline) exceeds this 0-1 value."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -82,6 +88,7 @@ def _build_thresholds(args: argparse.Namespace) -> RegressionThresholds | None:
         and args.max_summary_score_drop is None
         and args.max_category_accuracy_drop_pct is None
         and args.max_summary_score_drop_pct is None
+        and args.max_category_drift is None
     ):
         return None
     return RegressionThresholds(
@@ -94,15 +101,13 @@ def _build_thresholds(args: argparse.Namespace) -> RegressionThresholds | None:
             args.max_category_accuracy_drop_pct
         ),
         maximum_summary_score_drop_pct=args.max_summary_score_drop_pct,
+        maximum_category_drift=args.max_category_drift,
     )
 
 
 def _build_notifier() -> Notifier:
-    """Return Slack notifications when configured, else a safe default."""
-    settings = get_settings()
-    if settings.slack_webhook_url:
-        return SlackNotifier(settings.slack_webhook_url)
-    return NoopNotifier()
+    """Return the settings-composed notifier (Slack when configured)."""
+    return build_notifier(get_settings())
 
 
 def _apply_limit(

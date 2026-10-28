@@ -93,12 +93,29 @@ def thresholds_from_request(
     request: RunCreateRequest,
 ) -> RegressionThresholds | None:
     """Build the gate thresholds from the validated request body."""
+    api_to_domain = {
+        "min_category_accuracy": "minimum_category_accuracy",
+        "min_summary_score": "minimum_summary_score",
+        "max_latency_ms": "maximum_average_latency_ms",
+        "max_category_accuracy_drop": "maximum_category_accuracy_drop",
+        "max_summary_score_drop": "maximum_summary_score_drop",
+        "max_category_accuracy_drop_pct": (
+            "maximum_category_accuracy_drop_pct"
+        ),
+        "max_summary_score_drop_pct": "maximum_summary_score_drop_pct",
+        "max_category_drift": "maximum_category_drift",
+    }
     values = request.model_dump(
         exclude={"prompt_version", "limit", "baseline_run_id"},
     )
     if all(value is None for value in values.values()):
         return None
-    return RegressionThresholds(**values)
+    thresholds = {
+        api_to_domain[key]: value
+        for key, value in values.items()
+        if value is not None
+    }
+    return RegressionThresholds(**thresholds)
 
 
 def map_report_status(report_report: Any) -> str:

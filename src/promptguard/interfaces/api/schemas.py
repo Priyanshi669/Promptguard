@@ -6,7 +6,7 @@ the API cannot invent fields the domain does not carry.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -52,6 +52,15 @@ class RunCreateRequest(BaseModel):
         default=None, ge=0, le=100,
     )
     max_summary_score_drop_pct: float | None = Field(default=None, ge=0, le=100)
+    max_category_drift: float | None = Field(
+        default=None,
+        ge=0,
+        le=1,
+        description=(
+            "Opt-in drift-alert trigger sent to Slack when configured; "
+            "not a quality-gate threshold."
+        ),
+    )
 
 
 class RunCreatedResponse(BaseModel):
@@ -151,6 +160,7 @@ class ConfigResponse(BaseModel):
     provider_pool: list[ProviderPoolEntry]
     prompt_versions: list[str]
     datasets: dict[str, int]
+    slack_notifications: Literal["enabled", "disabled", "unconfigured"]
     credentials_in_identities: bool = Field(
         default=False,
         description=(

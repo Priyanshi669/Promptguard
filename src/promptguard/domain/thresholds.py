@@ -29,6 +29,18 @@ class RegressionThresholds(BaseModel):
     maximum_summary_score_drop_pct: float | None = Field(
         default=None, ge=0, le=100, allow_inf_nan=False,
     )
+    maximum_category_drift: float | None = Field(
+        default=None,
+        ge=0,
+        le=1,
+        allow_inf_nan=False,
+        description=(
+            "Opt-in drift-alert trigger: alert when the category "
+            "total-variation distance to the baseline exceeds this value. "
+            "None means no drift condition is configured and no drift "
+            "alert is ever sent."
+        ),
+    )
 
 
 class ThresholdViolation(BaseModel):

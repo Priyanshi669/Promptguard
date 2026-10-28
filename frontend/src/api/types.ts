@@ -38,6 +38,8 @@ export interface ProviderPoolEntry {
   model: string;
 }
 
+export type SlackNotificationStatus = "enabled" | "disabled" | "unconfigured";
+
 export interface ConfigResponse {
   candidate_model: string;
   candidate_base_url: string;
@@ -54,6 +56,7 @@ export interface ConfigResponse {
   provider_pool: ProviderPoolEntry[];
   prompt_versions: string[];
   datasets: Record<string, number>;
+  slack_notifications: SlackNotificationStatus;
   credentials_in_identities: boolean;
 }
 
@@ -113,23 +116,48 @@ export interface EvaluationResult {
   output_tokens: number;
 }
 
+export interface ClassMetrics {
+  tp: number;
+  fp: number;
+  fn: number;
+  precision: number;
+  recall: number;
+  f1: number;
+}
+
 export interface ClassificationMetrics {
+  total_cases: number;
   accuracy: number;
-  categories: Record<
-    string,
-    { support: number; tp: number; fp: number; precision: number; recall: number; f1: number }
-  >;
+  macro_precision: number;
+  macro_recall: number;
   macro_f1: number;
+  weighted_precision: number;
+  weighted_recall: number;
   weighted_f1: number;
-  confusion_matrix: Record<string, Record<string, number>>;
+  per_class: Record<string, ClassMetrics>;
+  confusion: Record<string, Record<string, number>>;
+}
+
+export interface BootstrapEstimate {
+  point_estimate: number;
+  lower_bound: number;
+  upper_bound: number;
+  confidence_level: number;
+  resamples: number;
+  seed: number;
+  sample_count: number;
+  method: string;
 }
 
 export interface ConfidenceIntervals {
-  category_accuracy: { lower: number; upper: number };
-  average_summary_score: { lower: number; upper: number };
-  resamples: number;
+  accuracy_interval: BootstrapEstimate | null;
+  summary_score_interval: BootstrapEstimate | null;
+  method: string;
   seed: number;
+  resamples: number;
   confidence_level: number;
+  sample_count: number;
+  small_sample: boolean;
 }
 
 /** Reused verbatim from the domain; unknown fields are passed through. */
@@ -182,6 +210,7 @@ export interface RunCreateRequest {
   max_summary_score_drop?: number | null;
   max_category_accuracy_drop_pct?: number | null;
   max_summary_score_drop_pct?: number | null;
+  max_category_drift?: number | null;
 }
 
 export interface RunCreatedResponse {

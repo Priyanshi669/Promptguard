@@ -13,7 +13,7 @@ import uuid
 from collections.abc import AsyncIterator, Iterable, Mapping
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi import Path as FastApiPath
@@ -29,6 +29,7 @@ from promptguard.application.calibration_draft_service import (
 from promptguard.application.wiring import (
     PROJECT_ROOT,
     build_default_run_service,
+    build_notifier,
 )
 from promptguard.config import get_settings
 from promptguard.domain.statistics import BootstrapConfig
@@ -39,7 +40,6 @@ from promptguard.infrastructure.evaluation.evaluator_config import (
     build_evaluator_config,
 )
 from promptguard.infrastructure.llm.errors import describe_provider_error
-from promptguard.infrastructure.notifications.slack import NoopNotifier
 from promptguard.infrastructure.persistence.repositories import (
     JsonEvaluationRunRepository,
 )
@@ -190,7 +190,7 @@ def compose_run_wiring(request: RunCreateRequest) -> RunWiring:
         build_default_run_service(
             prompt_version=request.prompt_version,
             runs_dir=PROJECT_ROOT / "runs",
-            notifier=NoopNotifier(),
+            notifier=build_notifier(settings),
             settings=settings,
         )
     )
@@ -210,6 +210,17 @@ def bootstrap_config(settings: Any) -> BootstrapConfig:
         resamples=settings.bootstrap_resamples,
         confidence_level=settings.bootstrap_confidence_level,
     )
+
+
+def slack_notification_status(
+    settings: Any,
+) -> Literal["enabled", "disabled", "unconfigured"]:
+    """Notify-state without ever exposing the webhook URL."""
+    if not settings.slack_webhook_url:
+        return "unconfigured"
+    if not settings.slack_notifications_enabled:
+        return "disabled"
+    return "enabled"
 
 
 def _safe_errors(
@@ -415,6 +426,7 @@ def create_app() -> FastAPI:
             ],
             prompt_versions=["v1"],
             datasets=datasets,
+            slack_notifications=slack_notification_status(settings),
             credentials_in_identities=True,
         )
 
