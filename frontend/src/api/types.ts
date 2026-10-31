@@ -57,7 +57,6 @@ export interface ConfigResponse {
   prompt_versions: string[];
   datasets: Record<string, number>;
   slack_notifications: SlackNotificationStatus;
-  credentials_in_identities: boolean;
 }
 
 export interface DatasetSummaryResponse {

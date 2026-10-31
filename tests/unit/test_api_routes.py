@@ -231,6 +231,9 @@ def test_config_has_no_credentials(
     text = response.text
     for secret in ("nvidia_api_key", "NVIDIA_KEY", "api_key"):
         assert secret not in text.lower()
+    # The endpoint must never re-introduce unverifiable config claims
+    # (a KeyError also proves the removed field stays removed).
+    assert "credentials_in_identities" not in response.json()
 
 
 def test_dataset_summary_counts_by_category(

@@ -161,13 +161,6 @@ class ConfigResponse(BaseModel):
     prompt_versions: list[str]
     datasets: dict[str, int]
     slack_notifications: Literal["enabled", "disabled", "unconfigured"]
-    credentials_in_identities: bool = Field(
-        default=False,
-        description=(
-            "Asserted invariant: evaluator identities contain provider "
-            "names and models only, never API keys."
-        ),
-    )
 
 
 class DatasetSummaryResponse(BaseModel):

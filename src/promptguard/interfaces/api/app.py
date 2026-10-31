@@ -427,7 +427,6 @@ def create_app() -> FastAPI:
             prompt_versions=["v1"],
             datasets=datasets,
             slack_notifications=slack_notification_status(settings),
-            credentials_in_identities=True,
         )
 
     @app.get(

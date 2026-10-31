@@ -45,9 +45,19 @@ performed against a private channel.
 
 ## Observations recorded during deployment (§4)
 
-- `GET /api/v1/config` hardcodes `credentials_in_identities=true`
-  (`app.py:430`) rather than reporting the actual settings source.
-  Not deployment-blocking; flagged for follow-up honesty alignment.
+- **CORRECTED (2026-10-31):** `GET /api/v1/config` previously hardcoded
+  `credentials_in_identities=true`, an unverifiable claim: the provider
+  key actually loads from `.env` (`Settings.nvidia_api_key`,
+  `env_file=".env"`), and no credential-bearing identities store exists
+  in the codebase (annotation identities are unrelated). The field was
+  removed from the response schema, the API endpoint, the dashboard
+  Settings panel, and the frontend types. Verified after the change:
+  `/api/v1/config` contains no `credentials_in_identities` key, no
+  credential material (guard test
+  `test_config_has_no_credentials` extended to pin the key's removal),
+  and still reports `slack_notifications="unconfigured"`. The
+  no-secrets invariant itself remains enforced by that test
+  (`nvidia_api_key`, `NVIDIA_KEY`, `api_key` never appear in the body).
 - The API process must be restarted to pick up source changes; the
   earlier in-process restart pattern (`cmd /c uv run promptguard-api`)
   is the documented local procedure.

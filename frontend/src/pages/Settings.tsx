@@ -81,10 +81,6 @@ export function SettingsPage() {
             <Panel title="Notifications & auth">
               <Row label="Slack notifications" value={data.slack_notifications} />
               <Row
-                label="Credentials in identities"
-                value={String(data.credentials_in_identities)}
-              />
-              <Row
                 label="Prompt versions"
                 value={data.prompt_versions.join(", ") || "—"}
               />
