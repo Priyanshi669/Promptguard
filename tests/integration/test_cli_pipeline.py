@@ -73,6 +73,11 @@ def cli_environment(monkeypatch: pytest.MonkeyPatch) -> None:
         nvidia_temperature=0.0,
         nvidia_seed=7,
         slack_webhook_url=None,
+        slack_notifications_enabled=True,
+        slack_report_url_prefix=None,
+        bootstrap_seed=20261026,
+        bootstrap_resamples=500,
+        bootstrap_confidence_level=0.95,
     )
     monkeypatch.setattr(cli, "get_settings", lambda: settings)
     monkeypatch.setattr(cli, "NVIDIAClient", FakeLLMClient)

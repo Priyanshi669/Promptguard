@@ -2,7 +2,8 @@
 
 import hashlib
 import json
-from typing import Any
+from datetime import UTC, datetime
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -15,11 +16,19 @@ from promptguard.application.contracts import (
     Notifier,
     ReportFormatter,
 )
+from promptguard.application.drift_alerts import drift_alert_message
 from promptguard.application.drift_service import DriftService
 from promptguard.application.evaluation_service import EvaluationService
 from promptguard.application.reporting_service import ReportingService
-from promptguard.domain.models import EvaluationReport, EvaluationResult, GoldenTestCase
+from promptguard.domain.models import (
+    EvaluationReport,
+    EvaluationResult,
+    GoldenTestCase,
+    SlackAlertRecord,
+)
+from promptguard.domain.paired import paired_baseline_analysis
 from promptguard.domain.regression import EvaluationComparison
+from promptguard.domain.statistics import BootstrapConfig
 from promptguard.domain.thresholds import RegressionThresholds
 
 LATEST_BASELINE = "latest"
@@ -52,6 +61,7 @@ class EvaluationRunService:
         repository: EvaluationRunRepository | None = None,
         formatter: ReportFormatter | None = None,
         notifier: Notifier | None = None,
+        drift_alert_url_prefix: str | None = None,
     ) -> None:
         """Initialize the orchestrator with its collaborators."""
         self._evaluation_service = evaluation_service
@@ -62,6 +72,7 @@ class EvaluationRunService:
         self._repository = repository
         self._formatter = formatter
         self._notifier = notifier
+        self._drift_alert_url_prefix = drift_alert_url_prefix
 
     @property
     def skipped_runs(self) -> list[str]:
@@ -80,6 +91,7 @@ class EvaluationRunService:
         thresholds: RegressionThresholds | None = None,
         baseline_run_id: str | None = None,
         eval_config: dict[str, Any] | None = None,
+        bootstrap: BootstrapConfig | None = None,
     ) -> EvaluationRunOutcome:
         """Execute the evaluation pipeline and return its outcome."""
         results = await self._evaluation_service.evaluate_dataset(
@@ -102,6 +114,7 @@ class EvaluationRunService:
             ),
             evaluator=self._extract_evaluator(eval_config),
             thresholds=thresholds,
+            bootstrap=bootstrap,
         )
 
         baseline_requested = baseline_run_id is not None
@@ -131,6 +144,11 @@ class EvaluationRunService:
                 report.baseline_run_id = baseline.run_id
                 report.comparison = comparison
                 report.drift = self._drift_service.compare(baseline, report)
+                report.paired_analysis = paired_baseline_analysis(
+                    baseline_results=baseline.results,
+                    candidate_results=report.results,
+                    bootstrap=bootstrap,
+                )
                 baseline_results_dict = {
                     result.test_case_id: result for result in baseline.results
                 }
@@ -155,14 +173,40 @@ class EvaluationRunService:
         report_text = self._formatter.format(report) if self._formatter else None
 
         notification_error: str | None = None
+        slack_status: Literal["delivered", "failed"] = "delivered"
         if self._notifier is not None:
+            drift_message = drift_alert_message(
+                report, self._drift_alert_url_prefix,
+            )
+            if drift_message is None:
+                message = self._notification_message(report)
+            else:
+                # A confirmed drift alert replaces the generic completed
+                # notification so each run delivers a single message.
+                message = drift_message
             try:
-                await self._notifier.notify(self._notification_message(report))
+                await self._notifier.notify(message)
+                slack_status, drift_error = "delivered", None
             except Exception as exc:  # noqa: BLE001
                 notification_error = (
                     "Notification delivery failed "
                     f"({type(exc).__name__})."
                 )
+                slack_status, drift_error = "failed", type(exc).__name__
+            if (
+                drift_message is not None
+                and report.baseline_run_id is not None
+            ):
+                report.slack_alert = SlackAlertRecord(
+                    baseline_run_id=report.baseline_run_id,
+                    status=slack_status,
+                    error=drift_error,
+                    recorded_at=datetime.now(UTC),
+                )
+                if self._repository is not None:
+                    # Re-save the run file with the delivery outcome only;
+                    # the evaluation content itself is unchanged.
+                    self._repository.save(report)
 
         return EvaluationRunOutcome(
             report=report,

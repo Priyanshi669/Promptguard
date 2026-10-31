@@ -1,0 +1,170 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  color-scheme: dark;
+  overscroll-behavior: none;
+}
+
+body {
+  overscroll-behavior: none;
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 20;
+}
+
+/* Legacy class hooks still used by the calibration page; visually
+   unified with the Stitch dark theme using concrete values. */
+.panel {
+  background-color: #0d0e11;
+  padding: 0.5rem;
+  border-radius: 0.125rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  border: 1px solid #1f1f23;
+}
+.panel h2 {
+  font-family: "Inter", sans-serif;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  color: #e3e2e6;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.375rem;
+}
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1280px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.metric {
+  background-color: #1b1b1f;
+  padding: 0.5rem;
+  border-radius: 0.125rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.metric .label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.6875rem;
+  line-height: 0.875rem;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: #8c909f;
+}
+.metric .value {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+  color: #e3e2e6;
+  word-break: break-all;
+}
+.error-banner {
+  padding: 0.375rem;
+  border-radius: 0.125rem;
+  background-color: rgba(147, 0, 10, 0.3);
+  border: 1px solid rgba(255, 180, 171, 0.3);
+  color: #ffb4ab;
+  font-family: "Inter", sans-serif;
+  font-size: 0.75rem;
+}
+.notes-list {
+  font-family: "Inter", sans-serif;
+  font-size: 0.75rem;
+  color: #c2c6d6;
+}
+.loading {
+  font-family: "Inter", sans-serif;
+  font-size: 0.75rem;
+  color: #8c909f;
+}
+.empty {
+  font-family: "Inter", sans-serif;
+  font-size: 0.75rem;
+  color: #8c909f;
+  padding: 0.5rem;
+}
+.mono {
+  font-family: "JetBrains Mono", monospace;
+}
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.field label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: #8c909f;
+}
+.field input {
+  height: 1.75rem;
+  padding: 0 0.375rem;
+  background-color: #1f1f23;
+  border-radius: 0.125rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.6875rem;
+  color: #e3e2e6;
+}
+.field input:focus {
+  outline: none;
+  background-color: #38393c;
+}
+button.primary {
+  background-color: #adc6ff;
+  color: #002e6a;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.125rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+button.primary:hover {
+  background-color: #d8e2ff;
+}
+table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.6875rem;
+}
+th {
+  padding: 0.25rem 0.375rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: #8c909f;
+  border-bottom: 1px solid #292a2d;
+}
+td {
+  padding: 0.375rem;
+  border-bottom: 1px solid #1b1b1f;
+}

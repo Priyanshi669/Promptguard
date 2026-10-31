@@ -1,0 +1,36 @@
+# Live provider error-handling captures (final hardening code)
+
+Each incident below was provoked against the real NVIDIA endpoint with the
+release-candidate error mapping installed (src/promptguard/infrastructure/llm/
+errors.py, wired into both CLIs). All three exit code 2 (INCONCLUSIVE),
+distinct from a gate FAIL (1).
+
+## Incident 1: HTTP 429 rate limit during a demo run
+
+Provoked by: several evaluation runs in one hour exhausting the provider
+quota. Observed 2026-10-26, repeated twice, ~12 minutes apart, confirming
+the quota window is longer than the retry backoff.
+
+PromptGuard failed: The provider rate limited the run (HTTP 429) after the configured retries. Reduce request volume or wait before retrying. [HTTP 429]
+(exit code 2)
+
+## Incident 2: unreachable endpoint (connection failure)
+
+Provoked by: NVIDIA_BASE_URL=https://invalid.invalid/v1
+
+PromptGuard failed: Could not reach the provider endpoint. Check the network connection and NVIDIA_BASE_URL.
+(exit code 2)
+
+## Incident 3: per-request timeout against the live endpoint
+
+Provoked by: NVIDIA_REQUEST_TIMEOUT_SECONDS=0.001 against the real endpoint
+(after the three-attempt retry budget was exhausted).
+
+PromptGuard failed: The model provider did not respond within the configured request timeout. Retry the run, or raise NVIDIA_REQUEST_TIMEOUT_SECONDS (allowed range: 1-60 seconds).
+(exit code 2)
+
+## Secret handling
+
+Mapped messages echo no provider payload. Unknown-exception fallbacks
+truncate diagnostics to 300 characters and redact the configured API key
+value (unit-tested in tests/unit/test_llm_errors.py).

@@ -136,8 +136,8 @@ def test_manifest_is_balanced_and_unlabeled() -> None:
     )
 
 
-def test_annotation_workbook_is_blank_and_balanced() -> None:
-    """The workbook should provide 120 blank rows without provisional labels."""
+def test_annotation_workbook_carries_candidate_text_and_blanks_reviewers() -> None:
+    """Human fields stay blank; candidate text is copied verbatim by ID."""
     manifest = load_json(CALIBRATION_DIR / "sample_manifest.json")
     audit = load_json(CALIBRATION_DIR / "double_annotation_ids.json")
     manifest_ids = {example["id"] for example in manifest["examples"]}
@@ -161,16 +161,35 @@ def test_annotation_workbook_is_blank_and_balanced() -> None:
         for row in rows
         if row["annotation_pass"] == "secondary"
     } == set(audit["ids"])
+    # Reviewer state after the annotator-1 batch (2026-10-27): every
+    # primary row is scored; the 20 secondary rows still await the
+    # independent second annotator.
+    scored_passes = {
+        row["annotation_pass"]
+        for row in rows
+        if (row["expected_summary"] or row["human_score"]).strip()
+    }
+    assert scored_passes == {"primary"}
     assert all(
         row[field] == ""
         for row in rows
+        if row["annotation_pass"] == "secondary"
         for field in (
             "expected_summary",
-            "actual_summary",
             "human_score",
             "annotator_id",
             "annotated_at",
+            "confidence",
         )
+    )
+    candidates = load_json(CALIBRATION_DIR / "candidate_outputs.json")
+    recorded = {
+        str(record["id"]): str(record.get("actual_summary", ""))
+        for record in candidates.get("records", [])
+    }
+    assert all(
+        row["actual_summary"] == recorded[row["id"]]
+        for row in rows
     )
     plan = load_json(CALIBRATION_DIR / "sampling_plan.json")
     assert fields == set(plan["annotation"]["workbook_fields"])

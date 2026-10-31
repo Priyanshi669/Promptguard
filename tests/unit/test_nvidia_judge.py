@@ -22,8 +22,10 @@ def test_judge_owns_retry_budget_and_timeout() -> None:
     settings.nvidia_base_url = "https://example.com/v1"
     settings.nvidia_model = "nvidia/test-model"
     settings.nvidia_request_timeout_seconds = 10.0
+    settings.nvidia_min_request_interval_seconds = 0
     settings.nvidia_temperature = None
     settings.nvidia_seed = None
+    settings.provider_pool = None
 
     with patch(
         "promptguard.infrastructure.evaluation.nvidia_judge.get_settings",
@@ -31,9 +33,9 @@ def test_judge_owns_retry_budget_and_timeout() -> None:
     ):
         judge = NVIDIAJudge()
 
-    assert judge._sync_client.max_retries == 0
-    assert judge._async_client.max_retries == 0
-    assert judge._async_client.timeout == 10.0
+    assert judge._sync_clients[0].max_retries == 0
+    assert judge._async_clients[0].max_retries == 0
+    assert judge._async_clients[0].timeout == 10.0
 
 
 @pytest.mark.asyncio
@@ -58,7 +60,7 @@ async def test_judge_retries_transient_timeout() -> None:
     )
 
     with patch.object(
-        NVIDIAJudge.a_generate.retry,
+        NVIDIAJudge._attempt_async.retry,
         "wait",
         wait_none(),
     ):
@@ -88,7 +90,7 @@ async def test_judge_stops_after_three_attempts() -> None:
 
     with (
         patch.object(
-            NVIDIAJudge.a_generate.retry,
+            NVIDIAJudge._attempt_async.retry,
             "wait",
             wait_none(),
         ),

@@ -4,7 +4,9 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
+from openai import APITimeoutError
 from pydantic import ValidationError
 
 from promptguard.application.reporting_service import ReportingService
@@ -69,6 +71,36 @@ def test_run_reports_provider_errors_as_configuration_exit() -> None:
     assert excinfo.value.code == 2
 
 
+def test_run_prints_actionable_provider_error(
+    capsys: pytest.CaptureFixture,
+) -> None:
+    """Provider failures should print remediation guidance, not raw text."""
+
+    def raise_timeout_error(coro):
+        coro.close()
+        request = httpx.Request("POST", "https://example.com/v1")
+        raise APITimeoutError(request=request)
+
+    settings = MagicMock()
+    settings.nvidia_api_key = "test-api-key"
+
+    with (
+        patch.object(
+            cli.asyncio,
+            "run",
+            side_effect=raise_timeout_error,
+        ),
+        patch.object(cli, "get_settings", return_value=settings),
+        pytest.raises(SystemExit) as excinfo,
+    ):
+        cli.run()
+
+    captured = capsys.readouterr()
+    assert "PromptGuard failed:" in captured.out
+    assert "NVIDIA_REQUEST_TIMEOUT_SECONDS" in captured.out
+    assert excinfo.value.code == 2
+
+
 @pytest.mark.asyncio
 async def test_run_enforces_evaluation_deadline() -> None:
     """A stuck evaluation must not outlive the configured run deadline."""
@@ -79,6 +111,9 @@ async def test_run_enforces_evaluation_deadline() -> None:
     settings = MagicMock()
     settings.evaluation_timeout_seconds = 0.01
     settings.nvidia_model = "test-model"
+    settings.bootstrap_seed = 20261026
+    settings.bootstrap_resamples = 10
+    settings.bootstrap_confidence_level = 0.95
     service = SimpleNamespace(run=slow_run)
 
     with (

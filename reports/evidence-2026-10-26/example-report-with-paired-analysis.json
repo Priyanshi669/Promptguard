@@ -1,0 +1,595 @@
+{
+  "run_id": "6e3dc286-643a-4c28-aa79-76d72b4c2170",
+  "timestamp": "2026-10-26T18:06:40.187122Z",
+  "prompt_version": "v1",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "dataset": "golden-v1",
+  "case_count": 10,
+  "category_accuracy": 0.1,
+  "average_summary_score": 1.3599999999999997,
+  "average_latency_ms": 422.3122099880129,
+  "total_input_tokens": 100,
+  "total_output_tokens": 100,
+  "total_cost_usd": null,
+  "schema_version": 1,
+  "results": [
+    {
+      "test_case_id": "banking77-001",
+      "expected_category": "Refund_not_showing_up",
+      "actual_category": "balance_not_updated_after_bank_transfer",
+      "normalized_category": "balance_not_updated_after_bank_transfer",
+      "normalization_applied": false,
+      "expected_summary": "The customer is asking about the status of a refund request for a recent large purchase, noting they contacted the merchant nearly a week ago but have not received the refund.",
+      "actual_summary": "Mock summary: customer asks about a pending transfer.",
+      "category_match": false,
+      "summary_score": 1.3599999999999999,
+      "latency_ms": 561.7805999936536,
+      "input_tokens": 10,
+      "output_tokens": 10,
+      "cost_usd": null,
+      "critical": false
+    },
+    {
+      "test_case_id": "banking77-002",
+      "expected_category": "activate_my_card",
+      "actual_category": "balance_not_updated_after_bank_transfer",
+      "normalized_category": "balance_not_updated_after_bank_transfer",
+      "normalization_applied": false,
+      "expected_summary": "Customer reports that their card will not activate and requests help.",
+      "actual_summary": "Mock summary: customer asks about a pending transfer.",
+      "category_match": false,
+      "summary_score": 1.3599999999999999,
+      "latency_ms": 433.648300007917,
+      "input_tokens": 10,
+      "output_tokens": 10,
+      "cost_usd": null,
+      "critical": false
+    },
+    {
+      "test_case_id": "banking77-003",
+      "expected_category": "age_limit",
+      "actual_category": "balance_not_updated_after_bank_transfer",
+      "normalized_category": "balance_not_updated_after_bank_transfer",
+      "normalization_applied": false,
+      "expected_summary": "A 16-year-old who just started working at McDonald's asks if they can deposit their paychecks at the bank.",
+      "actual_summary": "Mock summary: customer asks about a pending transfer.",
+      "category_match": false,
+      "summary_score": 1.3599999999999999,
+      "latency_ms": 419.34690007474273,
+      "input_tokens": 10,
+      "output_tokens": 10,
+      "cost_usd": null,
+      "critical": false
+    },
+    {
+      "test_case_id": "banking77-004",
+      "expected_category": "apple_pay_or_google_pay",
+      "actual_category": "balance_not_updated_after_bank_transfer",
+      "normalized_category": "balance_not_updated_after_bank_transfer",
+      "normalization_applied": false,
+      "expected_summary": "Customer reports an issue with topping up their American Express card in Apple Pay and asks for assistance.",
+      "actual_summary": "Mock summary: customer asks about a pending transfer.",
+      "category_match": false,
+      "summary_score": 1.3599999999999999,
+      "latency_ms": 434.0951000340283,
+      "input_tokens": 10,
+      "output_tokens": 10,
+      "cost_usd": null,
+      "critical": false
+    },
+    {
+      "test_case_id": "banking77-005",
+      "expected_category": "atm_support",
+      "actual_category": "balance_not_updated_after_bank_transfer",
+      "normalized_category": "balance_not_updated_after_bank_transfer",
+      "normalization_applied": false,
+      "expected_summary": "Customer requests assistance in locating their nearest ATM.",
+      "actual_summary": "Mock summary: customer asks about a pending transfer.",
+      "category_match": false,
+      "summary_score": 1.3599999999999999,
+      "latency_ms": 406.18930000346154,
+      "input_tokens": 10,
+      "output_tokens": 10,
+      "cost_usd": null,
+      "critical": false
+    },
+    {
+      "test_case_id": "banking77-006",
+      "expected_category": "automatic_top_up",
+      "actual_category": "balance_not_updated_after_bank_transfer",
+      "normalized_category": "balance_not_updated_after_bank_transfer",
+      "normalization_applied": false,
+      "expected_summary": "The customer requests information on where to find the auto top-up feature and a brief description of it.",
+      "actual_summary": "Mock summary: customer asks about a pending transfer.",
+      "category_match": false,
+      "summary_score": 1.3599999999999999,
+      "latency_ms": 382.45359994471073,
+      "input_tokens": 10,
+      "output_tokens": 10,
+      "cost_usd": null,
+      "critical": false
+    },
+    {
+      "test_case_id": "banking77-007",
+      "expected_category": "balance_not_updated_after_bank_transfer",
+      "actual_category": "balance_not_updated_after_bank_transfer",
+      "normalized_category": "balance_not_updated_after_bank_transfer",
+      "normalization_applied": false,
+      "expected_summary": "The customer asks about the typical time frame for a UK account transfer and is concerned because a recent transfer has not appeared yet.",
+      "actual_summary": "Mock summary: customer asks about a pending transfer.",
+      "category_match": true,
+      "summary_score": 1.3599999999999999,
+      "latency_ms": 397.90969993919134,
+      "input_tokens": 10,
+      "output_tokens": 10,
+      "cost_usd": null,
+      "critical": false
+    },
+    {
+      "test_case_id": "banking77-008",
+      "expected_category": "balance_not_updated_after_cheque_or_cash_deposit",
+      "actual_category": "balance_not_updated_after_bank_transfer",
+      "normalized_category": "balance_not_updated_after_bank_transfer",
+      "normalization_applied": false,
+      "expected_summary": "Customer reports that a cheque deposit is not appearing on their account, expected faster processing, and requests investigation and assistance.",
+      "actual_summary": "Mock summary: customer asks about a pending transfer.",
+      "category_match": false,
+      "summary_score": 1.3599999999999999,
+      "latency_ms": 411.02789994329214,
+      "input_tokens": 10,
+      "output_tokens": 10,
+      "cost_usd": null,
+      "critical": false
+    },
+    {
+      "test_case_id": "banking77-009",
+      "expected_category": "beneficiary_not_allowed",
+      "actual_category": "balance_not_updated_after_bank_transfer",
+      "normalized_category": "balance_not_updated_after_bank_transfer",
+      "normalization_applied": false,
+      "expected_summary": "The customer is unable to complete a money transfer, having tried multiple times, and each attempt results in an error message.",
+      "actual_summary": "Mock summary: customer asks about a pending transfer.",
+      "category_match": false,
+      "summary_score": 1.3599999999999999,
+      "latency_ms": 394.2572999512777,
+      "input_tokens": 10,
+      "output_tokens": 10,
+      "cost_usd": null,
+      "critical": false
+    },
+    {
+      "test_case_id": "banking77-010",
+      "expected_category": "cancel_transfer",
+      "actual_category": "balance_not_updated_after_bank_transfer",
+      "normalized_category": "balance_not_updated_after_bank_transfer",
+      "normalization_applied": false,
+      "expected_summary": "Customer made an incorrect rent payment to the wrong account and requests that the funds be transferred to the correct account by tomorrow.",
+      "actual_summary": "Mock summary: customer asks about a pending transfer.",
+      "category_match": false,
+      "summary_score": 1.3599999999999999,
+      "latency_ms": 382.41339998785406,
+      "input_tokens": 10,
+      "output_tokens": 10,
+      "cost_usd": null,
+      "critical": false
+    }
+  ],
+  "classification": {
+    "total_cases": 10,
+    "accuracy": 0.1,
+    "macro_precision": 0.01,
+    "macro_recall": 0.1,
+    "macro_f1": 0.01818181818181818,
+    "weighted_precision": 0.01,
+    "weighted_recall": 0.1,
+    "weighted_f1": 0.01818181818181818,
+    "per_class": {
+      "activate_my_card": {
+        "support": 1,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "age_limit": {
+        "support": 1,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "apple_pay_or_google_pay": {
+        "support": 1,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "atm_support": {
+        "support": 1,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "automatic_top_up": {
+        "support": 1,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "balance_not_updated_after_bank_transfer": {
+        "support": 1,
+        "tp": 1,
+        "fp": 9,
+        "fn": 0,
+        "precision": 0.1,
+        "recall": 1.0,
+        "f1": 0.18181818181818182
+      },
+      "balance_not_updated_after_cheque_or_cash_deposit": {
+        "support": 1,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "beneficiary_not_allowed": {
+        "support": 1,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "cancel_transfer": {
+        "support": 1,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "refund_not_showing_up": {
+        "support": 1,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      }
+    },
+    "confusion": {
+      "activate_my_card": {
+        "activate_my_card": 0,
+        "age_limit": 0,
+        "apple_pay_or_google_pay": 0,
+        "atm_support": 0,
+        "automatic_top_up": 0,
+        "balance_not_updated_after_bank_transfer": 1,
+        "balance_not_updated_after_cheque_or_cash_deposit": 0,
+        "beneficiary_not_allowed": 0,
+        "cancel_transfer": 0,
+        "refund_not_showing_up": 0
+      },
+      "age_limit": {
+        "activate_my_card": 0,
+        "age_limit": 0,
+        "apple_pay_or_google_pay": 0,
+        "atm_support": 0,
+        "automatic_top_up": 0,
+        "balance_not_updated_after_bank_transfer": 1,
+        "balance_not_updated_after_cheque_or_cash_deposit": 0,
+        "beneficiary_not_allowed": 0,
+        "cancel_transfer": 0,
+        "refund_not_showing_up": 0
+      },
+      "apple_pay_or_google_pay": {
+        "activate_my_card": 0,
+        "age_limit": 0,
+        "apple_pay_or_google_pay": 0,
+        "atm_support": 0,
+        "automatic_top_up": 0,
+        "balance_not_updated_after_bank_transfer": 1,
+        "balance_not_updated_after_cheque_or_cash_deposit": 0,
+        "beneficiary_not_allowed": 0,
+        "cancel_transfer": 0,
+        "refund_not_showing_up": 0
+      },
+      "atm_support": {
+        "activate_my_card": 0,
+        "age_limit": 0,
+        "apple_pay_or_google_pay": 0,
+        "atm_support": 0,
+        "automatic_top_up": 0,
+        "balance_not_updated_after_bank_transfer": 1,
+        "balance_not_updated_after_cheque_or_cash_deposit": 0,
+        "beneficiary_not_allowed": 0,
+        "cancel_transfer": 0,
+        "refund_not_showing_up": 0
+      },
+      "automatic_top_up": {
+        "activate_my_card": 0,
+        "age_limit": 0,
+        "apple_pay_or_google_pay": 0,
+        "atm_support": 0,
+        "automatic_top_up": 0,
+        "balance_not_updated_after_bank_transfer": 1,
+        "balance_not_updated_after_cheque_or_cash_deposit": 0,
+        "beneficiary_not_allowed": 0,
+        "cancel_transfer": 0,
+        "refund_not_showing_up": 0
+      },
+      "balance_not_updated_after_bank_transfer": {
+        "activate_my_card": 0,
+        "age_limit": 0,
+        "apple_pay_or_google_pay": 0,
+        "atm_support": 0,
+        "automatic_top_up": 0,
+        "balance_not_updated_after_bank_transfer": 1,
+        "balance_not_updated_after_cheque_or_cash_deposit": 0,
+        "beneficiary_not_allowed": 0,
+        "cancel_transfer": 0,
+        "refund_not_showing_up": 0
+      },
+      "balance_not_updated_after_cheque_or_cash_deposit": {
+        "activate_my_card": 0,
+        "age_limit": 0,
+        "apple_pay_or_google_pay": 0,
+        "atm_support": 0,
+        "automatic_top_up": 0,
+        "balance_not_updated_after_bank_transfer": 1,
+        "balance_not_updated_after_cheque_or_cash_deposit": 0,
+        "beneficiary_not_allowed": 0,
+        "cancel_transfer": 0,
+        "refund_not_showing_up": 0
+      },
+      "beneficiary_not_allowed": {
+        "activate_my_card": 0,
+        "age_limit": 0,
+        "apple_pay_or_google_pay": 0,
+        "atm_support": 0,
+        "automatic_top_up": 0,
+        "balance_not_updated_after_bank_transfer": 1,
+        "balance_not_updated_after_cheque_or_cash_deposit": 0,
+        "beneficiary_not_allowed": 0,
+        "cancel_transfer": 0,
+        "refund_not_showing_up": 0
+      },
+      "cancel_transfer": {
+        "activate_my_card": 0,
+        "age_limit": 0,
+        "apple_pay_or_google_pay": 0,
+        "atm_support": 0,
+        "automatic_top_up": 0,
+        "balance_not_updated_after_bank_transfer": 1,
+        "balance_not_updated_after_cheque_or_cash_deposit": 0,
+        "beneficiary_not_allowed": 0,
+        "cancel_transfer": 0,
+        "refund_not_showing_up": 0
+      },
+      "refund_not_showing_up": {
+        "activate_my_card": 0,
+        "age_limit": 0,
+        "apple_pay_or_google_pay": 0,
+        "atm_support": 0,
+        "automatic_top_up": 0,
+        "balance_not_updated_after_bank_transfer": 1,
+        "balance_not_updated_after_cheque_or_cash_deposit": 0,
+        "beneficiary_not_allowed": 0,
+        "cancel_transfer": 0,
+        "refund_not_showing_up": 0
+      }
+    }
+  },
+  "confidence_intervals": {
+    "accuracy_interval": {
+      "point_estimate": 0.1,
+      "lower_bound": 0.0,
+      "upper_bound": 0.3,
+      "confidence_level": 0.95,
+      "resamples": 2000,
+      "seed": 20261026,
+      "sample_count": 10,
+      "method": "seeded-percentile-bootstrap"
+    },
+    "summary_score_interval": {
+      "point_estimate": 1.3599999999999997,
+      "lower_bound": 1.3599999999999997,
+      "upper_bound": 1.3599999999999997,
+      "confidence_level": 0.95,
+      "resamples": 2000,
+      "seed": 20261026,
+      "sample_count": 10,
+      "method": "seeded-percentile-bootstrap"
+    },
+    "method": "seeded-percentile-bootstrap",
+    "seed": 20261026,
+    "resamples": 2000,
+    "confidence_level": 0.95,
+    "sample_count": 10,
+    "small_sample": true
+  },
+  "paired_analysis": {
+    "matched_cases": 10,
+    "both_correct": 1,
+    "both_incorrect": 9,
+    "baseline_only_correct": 0,
+    "candidate_only_correct": 0,
+    "mcnemar_p_value": null,
+    "mcnemar_uninformative": true,
+    "summary_change_interval": {
+      "point_estimate": 0.0,
+      "lower_bound": 0.0,
+      "upper_bound": 0.0,
+      "confidence_level": 0.95,
+      "resamples": 2000,
+      "seed": 20261026,
+      "sample_count": 10,
+      "method": "seeded-percentile-bootstrap"
+    },
+    "unavailable_reason": null
+  },
+  "eval_config_hash": "1b90df464e2af4e1677bc693839fd33ce6da8dac046a1a7760f02e0233021c9e",
+  "evaluator": {
+    "judge_provider": "nvidia",
+    "judge_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "judge_base_url": "https://integrate.api.nvidia.com/v1",
+    "judge_metric": "deepeval-geval-summary-quality",
+    "judge_rubric_version": "v1",
+    "judge_rubric_sha256": "7ef7ca7fdfc4703c97ea933f9c5aa7a6afb0d658f647ce2e4ed2aaac2637b1d5",
+    "evaluation_steps": [
+      "Compare the actual summary against the expected summary and judge whether it accurately captures the same meaning and the same important information.",
+      "Identify any statement in the actual summary that contradicts the expected summary and penalize that contradiction.",
+      "Identify any detail stated in the actual summary but not in the expected summary and treat it as invented information.",
+      "Identify any important information from the expected summary that is missing from the actual summary and treat it as an omission.",
+      "Allow reasonable paraphrasing and differences in wording; do not lower the score solely because the wording differs when the same meaning and important information are preserved."
+    ],
+    "evaluation_steps_sha256": "e6a4392e0ca106b0c27d0906169e81dc20134bcc4fcab13fcfb9ecb31560b817",
+    "deepeval_version": "4.1.10",
+    "judge_provider_pool": [
+      {
+        "name": "local-mock",
+        "model": "mock/mock-model"
+      }
+    ]
+  },
+  "thresholds": {
+    "minimum_category_accuracy": 0.7,
+    "minimum_summary_score": 3.0,
+    "maximum_average_latency_ms": null,
+    "maximum_category_accuracy_drop": null,
+    "maximum_summary_score_drop": null,
+    "maximum_category_accuracy_drop_pct": null,
+    "maximum_summary_score_drop_pct": null
+  },
+  "baseline_run_id": "66db6d25-8a36-438b-9d9f-6e3d055652cb",
+  "comparison": {
+    "baseline_run_id": "66db6d25-8a36-438b-9d9f-6e3d055652cb",
+    "current_run_id": "6e3dc286-643a-4c28-aa79-76d72b4c2170",
+    "baseline_category_accuracy": 0.1,
+    "current_category_accuracy": 0.1,
+    "category_accuracy_delta": 0.0,
+    "baseline_summary_score": 1.3599999999999997,
+    "current_summary_score": 1.3599999999999997,
+    "summary_score_delta": 0.0,
+    "baseline_latency_ms": 313.2987799588591,
+    "current_latency_ms": 422.3122099880129,
+    "latency_delta_ms": 109.01343002915382,
+    "baseline_input_tokens": 100,
+    "current_input_tokens": 100,
+    "input_token_delta": 0,
+    "baseline_output_tokens": 100,
+    "current_output_tokens": 100,
+    "output_token_delta": 0
+  },
+  "regression": {
+    "status": "FAIL",
+    "violations": [
+      {
+        "metric": "category_accuracy",
+        "actual_value": 0.1,
+        "threshold": 0.7,
+        "direction": "below",
+        "message": "category_accuracy is below its minimum."
+      },
+      {
+        "metric": "average_summary_score",
+        "actual_value": 1.3599999999999997,
+        "threshold": 3.0,
+        "direction": "below",
+        "message": "average_summary_score is below its minimum."
+      }
+    ],
+    "case_regressions": [
+      {
+        "test_case_id": "banking77-001",
+        "baseline_category_match": false,
+        "current_category_match": false,
+        "status": "unchanged_failure"
+      },
+      {
+        "test_case_id": "banking77-002",
+        "baseline_category_match": false,
+        "current_category_match": false,
+        "status": "unchanged_failure"
+      },
+      {
+        "test_case_id": "banking77-003",
+        "baseline_category_match": false,
+        "current_category_match": false,
+        "status": "unchanged_failure"
+      },
+      {
+        "test_case_id": "banking77-004",
+        "baseline_category_match": false,
+        "current_category_match": false,
+        "status": "unchanged_failure"
+      },
+      {
+        "test_case_id": "banking77-005",
+        "baseline_category_match": false,
+        "current_category_match": false,
+        "status": "unchanged_failure"
+      },
+      {
+        "test_case_id": "banking77-006",
+        "baseline_category_match": false,
+        "current_category_match": false,
+        "status": "unchanged_failure"
+      },
+      {
+        "test_case_id": "banking77-007",
+        "baseline_category_match": true,
+        "current_category_match": true,
+        "status": "unchanged_pass"
+      },
+      {
+        "test_case_id": "banking77-008",
+        "baseline_category_match": false,
+        "current_category_match": false,
+        "status": "unchanged_failure"
+      },
+      {
+        "test_case_id": "banking77-009",
+        "baseline_category_match": false,
+        "current_category_match": false,
+        "status": "unchanged_failure"
+      },
+      {
+        "test_case_id": "banking77-010",
+        "baseline_category_match": false,
+        "current_category_match": false,
+        "status": "unchanged_failure"
+      }
+    ],
+    "critical_case_failure": false,
+    "incompatibility_reasons": []
+  },
+  "drift": {
+    "sufficient_data": true,
+    "total_variation_distance": 0.0,
+    "baseline_distribution": {
+      "balance_not_updated_after_bank_transfer": 1.0
+    },
+    "current_distribution": {
+      "balance_not_updated_after_bank_transfer": 1.0
+    }
+  }
+}

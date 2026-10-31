@@ -2,37 +2,67 @@
 
 Production-oriented LLM evaluation and regression detection system.
 
-## Architecture
+## System architecture
 
-```
-domain/           pure Pydantic models + rules (no infrastructure imports)
-  models.py         EvaluationResult, EvaluationReport
-  regression.py     EvaluationComparison, RegressionResult
-  thresholds.py     RegressionThresholds, ThresholdViolation
-  drift.py          CategoryDriftResult
-application/      services + contracts (ABCs implemented by infrastructure)
-  evaluation_service.py    evaluates golden cases -> EvaluationResult[]
-  reporting_service.py     aggregates results -> EvaluationReport
-  comparison_service.py    baseline deltas + threshold evaluation
-  drift_service.py         category-distribution drift
-  calibration_service.py   judge/human agreement and bias metrics
-  run_service.py           orchestrates the full pipeline
-  contracts.py             EvaluationRunRepository, ReportFormatter,
-                           Notifier, LLMClient
-infrastructure/   concrete adapters (NVIDIA, DeepEval, JSON, Slack, text)
-  calibration/             human-labelled calibration-data loader
-  evaluation/rubric.py     versioned, content-hashed judge rubric
-  evaluation/evaluator_config.py  non-secret evaluator identity
-interfaces/       CLI composition roots
-  calibration_cli.py       promptguard-calibrate entrypoint
+The diagram shows components present in `src/promptguard/`. The judge is a
+separate adapter and evaluation role; provider settings may point candidate
+generation and judging at the same model or different models.
+
+```mermaid
+flowchart LR
+    CLI[CLI: promptguard] --> APP[Application services]
+    CALCLI[CLI: promptguard-calibrate] --> CAL[Calibration service]
+    APP --> DOM[Domain models and rules]
+    APP --> DATA[JSON golden dataset adapter]
+    APP --> PROMPT[YAML prompt adapter]
+    APP --> CAND[LLM client and provider pool]
+    APP --> JUDGE[DeepEval GEval summary metric]
+    JUDGE --> JADAPTER[NVIDIA judge adapter]
+    APP --> RUNS[JSON report repository]
+    APP --> FORMAT[Text report formatter]
+    APP --> SLACK[Optional Slack webhook notifier]
+    CAL --> HUMAN[Human-reviewed calibration input]
+    CAL --> JADAPTER
 ```
 
-## Data flow
+## Evaluation flow
 
+```mermaid
+flowchart TD
+    A[CLI loads settings, prompt and golden cases] --> B[Generate candidate response per case]
+    B --> C[Normalize category and check expected category]
+    C --> D[DeepEval GEval judge scores summary]
+    D --> E[Aggregate case results and run metadata]
+    E --> F{Baseline requested?}
+    F -- Yes --> G[Check compatibility, compute metric deltas and category drift]
+    F -- No --> H[No baseline comparison]
+    G --> I[Evaluate configured thresholds and critical cases]
+    H --> I
+    I --> J[Persist complete JSON report]
+    J --> K[Render CLI report and optionally notify Slack]
 ```
-evaluate -> aggregate -> compare (optional baseline) -> drift
-        -> thresholds -> persist -> report -> notify (optional)
+
+## Roadmap and status
+
+Statuses describe the current repository. “Proposed” items are not
+implemented capabilities; calibration remains blocked until the human review
+and annotation gates are complete.
+
+```mermaid
+flowchart TD
+    DONE[Implemented: CLI evaluation, BANKING77 golden cases, NVIDIA-compatible candidate and judge adapters, GEval, metrics, thresholds, persisted reports and fingerprints, baseline comparison, regression gates, retries and provider failover, optional Slack notification] --> NEXT
+    NEXT[Next: complete human review and annotations, then run calibration] --> LATER
+    LATER[Proposed: prompt registry with visual diffs, security evaluation, bootstrap confidence intervals, response caching, concurrent evaluation, production monitoring and trend dashboard, pull request quality-gate integration]
+    LIMIT[Current limitations: no security suite, cache, concurrency, production monitoring or pull request comments. Provider cost is recorded only when supplied by the provider.]:::note
+    LATER -. scope note .-> LIMIT
+    classDef note fill:#fff4d6,stroke:#b58105,color:#222
 ```
+
+`.github/workflows/evaluation.yml` runs tests, lint, type checks, and
+evaluation quality gates on pushes and pull requests. It does not comment
+on pull requests. Prompt YAML files are versioned inputs, not a
+prompt registry or visual diff system. Calibration status and evidence are
+tracked in `reports/execution-evidence/execution-summary.md`.
 
 ## CLI
 
@@ -64,6 +94,14 @@ and every drop threshold must be evaluable and pass. Any violation fails
 the run; mixed absolute and drop policies never pass on a partial
 evaluation. `--limit` must be at least `1`; an empty run can never satisfy
 a quality gate.
+
+Provider failures are reported as actionable, secret-free messages: time
+outs point at `NVIDIA_REQUEST_TIMEOUT_SECONDS`, authentication failures
+point at `NVIDIA_API_KEY` (the key value is never printed), rate limits
+name the backoff path, and connection failures point at the network and
+`NVIDIA_BASE_URL`. Known provider errors echo no provider payload; unknown
+failures keep their diagnostic context with the configured key redacted.
+All such failures exit `2`, distinct from a gate FAIL.
 
 ### Judge calibration
 
@@ -108,15 +146,31 @@ for configuration or provider errors. Do not use provisional or
 model-generated labels as human ground truth.
 
 Calibration data preparation is documented in
-[`dataset/calibration/README.md`](dataset/calibration/README.md). The v1
-plan selects 100 unlabeled BANKING77 cases, two per prompt category, and
-requires human-written references plus 20% double annotation. The
-repository currently contains only the schema, sampling plan, and
-unlabeled manifest; no reference labels are included. The `card_pin`
-entries are provisional: BANKING77 has no exact label, and the proposed
-`get_physical_card`/`pin_blocked` mapping needs human inclusion review. For
-the v1 plan, run the command with `--min-samples 100` only after that
-review is complete.
+[`dataset/calibration/README.md`](dataset/calibration/README.md) and the
+annotation protocol in
+[`dataset/calibration/ANNOTATION_PROTOCOL.md`](dataset/calibration/ANNOTATION_PROTOCOL.md).
+The v1 plan selects 100 unlabeled BANKING77 cases, two per prompt category,
+and requires human-written references plus 20% double annotation. Current
+status: the sample manifest is approved (the `card_pin` inclusion review is
+complete, recorded in `v1/manifest_validation.json`), candidate outputs are
+generated in `v1/candidate_outputs.json`, and all 100 primary reviewer rows
+of the 120-row workbook (`v1/annotation_workbook.csv`) are human-annotated
+(annotator 1; 6 rows flagged with similarity warnings for the borderline
+guard). The 20 double-annotated secondary rows are still pending, so the
+strict validator exits 1 with exactly 100 pending-field errors and
+calibration execution remains blocked until that secondary pass lands.
+
+Validate the workbook at any time; it exits `0` only when annotations are
+complete and mechanically consistent with the recorded candidates:
+
+```powershell
+uv run python scripts/validate_annotation_workbook.py
+```
+
+For the v1 plan, run the calibration command with `--min-samples 100` only
+after the workbook is fully annotated, the labels validate against
+`v1/calibration_schema.json`, and no model-generated label has been treated
+as human ground truth.
 
 Reports are persisted as complete JSON runs under `runs/` and rendered
 to the console. When a baseline is used, the comparison deltas are stored
@@ -142,13 +196,60 @@ Explicit baseline IDs still load their requested report. Aggregate accuracy,
 score, latency, and token totals are
 validated against the stored case results, and inconsistent evidence is
 INCONCLUSIVE rather than trusted. Slack notification is enabled only when
-`SLACK_WEBHOOK_URL` is set in `.env`; delivery failures are reported as
-warnings and do not change the quality-gate decision.
+`SLACK_WEBHOOK_URL` is set in `.env` (and `SLACK_NOTIFICATIONS_ENABLED`
+is not `false`); delivery failures are reported as warnings and do not
+change the quality-gate decision.
+
+Drift alerts are a distinct, opt-in notification. When a run has a
+compatible baseline, the existing category-drift measurement (total
+variation distance) exceeds a run-level `--max-category-drift`
+(`max_category_drift` in the API; 0-1), and the run's
+`SLACK_NOTIFICATIONS_ENABLED` is on, the Slack message becomes a
+structured drift alert: candidate and baseline run IDs, drifted category
+shares with their deltas, comparison context, gate status, and a report
+link when `SLACK_REPORT_URL_PREFIX` is configured. Inconclusive
+comparisons, missing baselines, and missing thresholds never send a
+confirmed-drift alert, quality-gate failures are not treated as drift,
+and repeated processing of an already-delivered drift event is skipped
+via the delivery status persisted on the report. Slack delivery retries
+transient failures up to `SLACK_MAX_ATTEMPTS` (default 3) with a
+`SLACK_TIMEOUT_SECONDS` (default 10) request timeout. Note the missing
+capability: there is no persistent server-wide drift threshold — the
+condition is configured per run, and percent-based or latency drift
+alerts do not exist yet.
 
 The application retry policy is the only retry layer: SDK retries are
-disabled, and transient provider failures, including timeouts, connection
-errors, rate limits, and 5xx responses, are retried up to three attempts.
-Requests time out after `NVIDIA_REQUEST_TIMEOUT_SECONDS` (default `10`).
+disabled. Transient transport failures (timeouts, connection errors, and
+5xx responses) are retried up to three attempts per provider. Rate limits
+(429) and credential rejections (401) are not retried in place: they fail
+over immediately to the next provider in `PROVIDER_POOL`. When the last
+provider is exhausted, the run fails with an actionable
+`QuotaExceededError` and exit code 2. Transient failures also fail over
+once per-provider retries are spent, unless the failing provider is the
+only one configured, in which case the original error is raised.
+
+Requests are throttled client-side: request starts are spaced at least
+`NVIDIA_MIN_REQUEST_INTERVAL_SECONDS` apart (default `1.0`, 0-60 allowed),
+shared per provider and across the candidate client and judge.
+
+Fallback providers are configured as a JSON list in `PROVIDER_POOL`;
+providers are tried in order:
+
+```
+PROVIDER_POOL=[{"name": "primary", "base_url": "https://integrate.api.nvidia.com/v1", "api_key": "nvapi-...", "model": "nvidia/nemotron-3-ultra-550b-a55b"}, {"name": "backup", "base_url": "https://openrouter.ai/api/v1", "api_key": "sk-or-...", "model": "meta-llama/llama-3.3-70b-instruct"}]
+```
+
+Without `PROVIDER_POOL`, the single `NVIDIA_*` provider is used and
+behavior is unchanged. When a pool is configured, its composition (never
+credentials) is recorded in `eval_config_hash` inputs, so runs with a
+fallback pool and runs without one are not treated as comparable
+baselines. A pool rotator is fresh per request: an exhausted primary
+costs one fast 429 per call until its quota window resets, then the pool
+returns to it automatically.
+Requests time out after `NVIDIA_REQUEST_TIMEOUT_SECONDS` (default `30`,
+allowed range 1-60). The default is informed by observed provider latency
+(roughly 3.5-8 seconds per request in recent runs) with headroom for slow
+outliers, while keeping three attempts well inside the run deadline.
 The complete CLI evaluation is bounded by `EVALUATION_TIMEOUT_SECONDS`
 (default `900`), so a stuck provider cannot outlive the CI job. Invalid
 JSON, schema violations, blank required text, and empty model responses are
@@ -166,6 +267,160 @@ set without the dev dependency group and runs as the unprivileged `appuser`.
 
 Set `NVIDIA_TEMPERATURE` and `NVIDIA_SEED` in `.env` to make generation
 and judging reproducible (both are optional).
+
+## Quick demo
+
+Prerequisites: `.env` containing `NVIDIA_API_KEY` and `NVIDIA_MODEL`.
+
+Run the full 3-step demo (checks, evaluation with a passing gate, then a
+failing gate):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\run_demo.ps1
+```
+
+Or run the steps manually:
+
+```powershell
+# 1. Evaluate 10 golden cases against the most recent persisted run.
+#    Exit 0 when the quality gate passes. The explicit 60-second override
+#    adds headroom over the 30-second default for slow providers.
+$env:NVIDIA_REQUEST_TIMEOUT_SECONDS = "60"
+uv run promptguard --prompt-version v1 --limit 10 --baseline latest `
+    --min-category-accuracy 0.7 --min-summary-score 3.0 --max-latency-ms 60000
+
+# 2. The full report is printed and persisted under runs\<run-id>.json.
+
+# 3. Force a gate failure: require 100% category accuracy against a model
+#    scoring ~80%. Exit 1 proves the regression gate blocks the release.
+uv run promptguard --prompt-version v1 --limit 10 --baseline latest `
+    --min-category-accuracy 1.0
+```
+
+Each report records the run ID, UTC timestamp, model, prompt version,
+dataset, token totals, and an `eval_config_hash` fingerprinting the prompt,
+dataset, model, and judge configuration, so runs are reproducible and
+baselines are comparable.
+
+Reports also include multi-class classification metrics computed from the
+per-case category evidence: per-class precision, recall, F1, and support;
+macro and support-weighted aggregates; and the full confusion matrix.
+Zero-denominator precision, recall, and F1 are reported as 0.0, never NaN.
+These metrics are descriptive evidence and do not participate in quality
+gates; gate decisions remain governed by the configured thresholds and
+baseline comparisons. Wide confusion matrices (more than eight labels) are
+persisted in the JSON report but omitted from console output.
+
+Reports also include seeded percentile-bootstrap confidence intervals for
+category accuracy (resampling per-case expected/predicted pairs) and for
+the mean summary score (resampling per-case scores). Defaults are 2,000
+resamples at 95% confidence with a fixed seed (`BOOTSTRAP_SEED`,
+`BOOTSTRAP_RESAMPLES`, and `BOOTSTRAP_CONFIDENCE_LEVEL` environment
+variables override them), so identical inputs reproduce identical
+intervals. Intervals quantify sampling uncertainty under the resampling
+scheme only: they do not prove the golden dataset represents production
+traffic, and they do not establish judge agreement with human reviewers.
+Empty runs have no intervals, and gates never consume these values.
+
+When a baseline run is compared, reports also include paired per-case
+analysis aligned by test case id (never by array position): the counts of
+cases the candidate regressed on (baseline only correct), fixed
+(candidate only correct), and agreed on, an exact McNemar p-value over
+the discordant pairs, and a paired bootstrap interval for the mean
+summary-score change (candidate minus baseline per case). Equal-accuracy
+runs that fail on different cases are therefore distinguished. With zero
+discordant cases the test is reported as uninformative rather than
+claiming an effect; an interval containing zero does not establish a
+direction. If the runs cannot be aligned reliably, the analysis is
+reported as unavailable with a reason. Like the other statistics, paired
+analysis is informational evidence: release gates, statuses, and exit
+codes are unchanged.
+
+## HTTP API and dashboard
+
+Requirements: Python 3.11+ with `uv`, Node.js 18+ with npm, and `.env`
+containing `NVIDIA_API_KEY` and `NVIDIA_MODEL`.
+
+Serve the FastAPI backend (default port 8000):
+
+```powershell
+uv run promptguard-api --port 8000
+```
+
+Serve the web dashboard (http://localhost:5173):
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Drive the full pipeline over HTTP:
+
+```powershell
+# Health and readiness
+curl http://localhost:8000/api/v1/health
+curl http://localhost:8000/api/v1/readiness
+
+# Queue an evaluation run: 3 cases, baseline comparison against the
+# newest persisted run, a passing-gate threshold, and a drift-alert
+# threshold. status=unconfigured Slack never sends messages.
+curl -X POST http://localhost:8000/api/v1/runs `
+  -H "Content-Type: application/json" `
+  -d "{\"prompt_version\":\"v1\",\"limit\":3,\"baseline_run_id\":\"latest\",\"min_summary_score\":3.0,\"max_category_drift\":0.2}"
+
+# Poll the job until a terminal status
+curl http://localhost:8000/api/v1/run-jobs/<job_id>
+
+# Read the report, list runs, download exports
+curl http://localhost:8000/api/v1/runs/<run_id>
+curl "http://localhost:8000/api/v1/runs?offset=0&limit=5"
+curl -o report.json "http://localhost:8000/api/v1/runs/<run_id>/export?format=json"
+```
+
+The dashboard pages: Overview (metrics, verdict, recent runs), Evaluation
+runs (history, queue form, run report with per-class breakdown, drift and
+confidence intervals, per-case inspector), Calibration, and read-only
+Settings (models, limits, Slack status, datasets). Each page renders only
+fields the backend actually carries; unconfigured capabilities are shown
+as absent, never faked.
+
+## Slack drift alerts
+
+Drift alerting is independent of the release gate: a run can pass or
+stay inconclusive and still raise a drift alert. Configure an incoming
+webhook in `.env` (see `.env.example`):
+
+```
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+SLACK_NOTIFICATIONS_ENABLED=true
+SLACK_TIMEOUT_SECONDS=10
+SLACK_MAX_ATTEMPTS=3
+SLACK_REPORT_URL_PREFIX=   # optional; adds a {prefix}/runs/{id} link
+```
+
+With that configuration, every run that supplies a baseline
+(`--baseline <id|latest>`, or `baseline_run_id` on the API) AND a
+`--max-category-drift` threshold evaluates the total-variation distance
+between the baseline and candidate category distributions. When the
+distance strictly exceeds the threshold, one plain-text Slack message is
+sent listing the largest category shifts, gate status, and report ID.
+
+Guarantees (enforced in code and tests):
+
+- No webhook configured or notifications disabled: nothing is ever sent.
+- Exactly one alert per (candidate run, baseline) pair; the delivery
+  outcome is persisted in the run JSON (`slack_alert`), and a repeated
+  processing of the same event never re-sends (failed attempts are the
+  only retryable case).
+- Quality-gate failures are not drift; the gate needs drop/performance
+  thresholds, while alerts need only the drift threshold.
+- The webhook URL never appears in logs, error messages, or the API.
+
+Without `--max-category-drift`, no drift alert is ever evaluated — the
+condition simply does not exist for that run.
+
+For deployment guidance, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Development
 

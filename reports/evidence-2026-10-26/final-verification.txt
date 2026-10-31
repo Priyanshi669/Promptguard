@@ -1,0 +1,58 @@
+﻿revision: cdf2666e6dd8108931ce6a26a54fc321e0d84a21 (release candidate, 34 uncommitted path(s) on top)
+date: 2026-10-26T23:42:35.1821184+05:30
+
+=== pytest ===
+........................................................................ [ 14%]
+........................................................................ [ 29%]
+........................................................................ [ 44%]
+........................................................................ [ 59%]
+........................................................................ [ 74%]
+....................................s................................... [ 89%]
+.....................................................                    [100%]Running teardown with pytest sessionfinish...
+
+Test 
+tests/unit/test_path_safety.py::test_resolve_identifier_path_rejects_symlink_es
+cape was skipped. Reason: 
+('C:\\project\\Promptguard\\tests\\unit\\test_path_safety.py', 63, 'Skipped: 
+symlink creation is not permitted')
+484 passed, 1 skipped in 14.51s
+
+=== ruff ===
+All checks passed!
+
+=== mypy ===
+Success: no issues found in 43 source files
+
+=== uv lock --check ===
+uv : Resolved 90 packages in 1ms
+At line:1 char:711
++ ... uv lock --check ===" | Add-Content $log; uv lock --check 2>&1 | Out-S ...
++                                              ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Resolved 90 packages in 1ms:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+=== git diff --check ===
+git : warning: in the working copy of '.gitignore', LF will be replaced by CRLF the next time Git touches it
+At line:1 char:827
++ ... t diff --check ===" | Add-Content $log; git diff --check 2>&1 | Out-S ...
++                                             ~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warning: in the... Git touches it:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: in the working copy of 'src/promptguard/application/reporting_service.py', LF will be replaced by CRLF the 
+next time Git touches it
+warning: in the working copy of 'src/promptguard/infrastructure/evaluation/evaluator_config.py', LF will be replaced 
+by CRLF the next time Git touches it
+warning: in the working copy of 'src/promptguard/infrastructure/evaluation/nvidia_judge.py', LF will be replaced by 
+CRLF the next time Git touches it
+warning: in the working copy of 'src/promptguard/infrastructure/llm/client.py', LF will be replaced by CRLF the next 
+time Git touches it
+warning: in the working copy of 'src/promptguard/interfaces/calibration_cli.py', LF will be replaced by CRLF the next 
+time Git touches it
+warning: in the working copy of 'tests/integration/test_cli_pipeline.py', LF will be replaced by CRLF the next time 
+Git touches it
+warning: in the working copy of 'tests/unit/test_nvidia_judge.py', LF will be replaced by CRLF the next time Git 
+touches it
+
+whitespace check exit: 0

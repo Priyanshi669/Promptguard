@@ -13,14 +13,15 @@ from tenacity import (
     wait_exponential,
 )
 
-RETRYABLE_EXCEPTIONS = (
+TRANSIENT_EXCEPTIONS = (
     TimeoutError,
     ConnectionError,
     APIConnectionError,
     APITimeoutError,
-    RateLimitError,
     InternalServerError,
 )
+
+RETRYABLE_EXCEPTIONS = TRANSIENT_EXCEPTIONS + (RateLimitError,)
 
 LLM_RETRY_ATTEMPTS = 3
 LLM_RETRY_WAIT = wait_exponential(

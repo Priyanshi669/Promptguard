@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.11,<3.13"
 dependencies = [
     "deepeval>=4.1.10",
+    "fastapi>=0.162.0",
     "httpx>=0.28.1",
     "jinja2>=3.1.6",
     "matplotlib>=3.11.1",
@@ -17,11 +18,13 @@ dependencies = [
     "pydantic-settings>=2.15.0",
     "pyyaml>=6.0.3",
     "tenacity>=9.1.4",
+    "uvicorn>=0.54.0",
 ]
 
 [project.scripts]
 promptguard = "promptguard.interfaces.cli:run"
 promptguard-calibrate = "promptguard.interfaces.calibration_cli:run"
+promptguard-api = "promptguard.interfaces.api_launcher:run"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
@@ -42,3 +45,6 @@ module = [
     "deepeval.*",
 ]
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
