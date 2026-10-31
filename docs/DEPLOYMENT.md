@@ -13,8 +13,10 @@ repeat of verified steps with deployment-level failure modes added.
   camouflage that state; dashboards and alerts surface it verbatim.
 - Secrets stay out of images, logs, the repo, and API responses. The
   webhook URL and provider keys live only in environment settings.
-- `runs/` artifacts are append-only evidence; deployments never rewrite
-  persisted reports.
+- `runs/` artifacts are persisted evidence; individual report files may
+  be re-saved in place after a notification attempt (the `slack_alert`
+  delivery record), but deployments never delete or rewrite unrelated
+  content.
 
 ## 1. Build and environment prerequisites
 
