@@ -43,6 +43,29 @@ proof (exactly one message per drift event, persisted
 `slack_alert.status == "delivered"`, no resend on duplicate) is
 performed against a private channel.
 
+## Tier 2 dry-run verification (local webhook stub, 2026-10-31)
+
+Real Slack was NOT contacted (no webhook URL exists in this environment;
+`slack_notifications` remains `"unconfigured"`). Instead, the delivery
+lifecycle was proven against a genuine HTTP listener bound to a random
+loopback port (`tests/integration/test_slack_webhook_lifecycle.py`,
+5 tests):
+
+| Scenario | Result |
+| --- | --- |
+| Wiring + status | enabled/unconfigured/disabled map to `SlackNotifier`/`NoopNotifier` and the honest status enum |
+| Drift pair end to end | baseline (4x `billing`) then candidate (2x `billing`, 2x `technical`, TVD 0.5 > 0.2) -> exactly 2 HTTP POSTs: generic completion + one drift alert starting `PromptGuard drift alert` with candidate/baseline run IDs; persisted `slack_alert.status="delivered"`, `error=None` |
+| Replay dedupe | re-deciding the persisted delivered event produces no message decision and no extra POST; a genuinely new drift event against the same baseline still fires (dedupe is per event, not per baseline) |
+| Transient 5xx | 500, 500, then 200 -> delivery succeeds on attempt 3 within the bounded-retry policy |
+| Permanent 4xx | 400 -> immediate sanitized `SlackDeliveryError`, no retries, webhook URL absent from the error |
+
+This is the full notification lifecycle minus only the real webhook URL,
+which remains an operator-supplied secret. Tier 2/3 live-Slack proof
+stays blocked on that secret; `.env.example` documents the exact
+variables (`SLACK_WEBHOOK_URL`, `SLACK_NOTIFICATIONS_ENABLED`,
+`SLACK_TIMEOUT_SECONDS`, `SLACK_MAX_ATTEMPTS`,
+`SLACK_REPORT_URL_PREFIX`).
+
 ## Observations recorded during deployment (§4)
 
 - **CORRECTED (2026-10-31):** `GET /api/v1/config` previously hardcoded
