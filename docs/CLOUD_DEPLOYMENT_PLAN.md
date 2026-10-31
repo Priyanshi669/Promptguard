@@ -212,6 +212,53 @@ Reverse-proxy mapping (same-origin proposal):
 **[PROPOSAL]** Uvicorn native support for serving dist is not part of
 the codebase — a proxy/static layer is required, not optional.
 
+### 3.1 Phase 2B implemented: local production stack (same-origin) **[IMPLEMENTED 2026-10-31]**
+
+Files: `frontend/Dockerfile` (multi-stage: `node:22-slim` build →
+`nginx:1.27-alpine` serve), `frontend/nginx.conf`,
+`frontend/.dockerignore`, `docker-compose.yaml`. Backend container is
+unchanged (`Dockerfile`, commit `dbc0f3e`).
+
+- `web` (nginx) publishes **8080:80** — the only public port. Static
+  SPA + `/api/v1/` reverse proxy to `api:8000` over the private
+  `promptguard-internal` network. `proxy_pass` without a URI part
+  forwards the original path and query unchanged.
+- `api` has **no** published port; runs as UID 10001; named volume
+  `runs` mounted at `/app/runs`.
+- SPA fallback `try_files $uri $uri/ /index.html` covers
+  `/runs/:runId`, `/calibration`, `/settings` refreshes; Vite assets in
+  `/assets/…` are content-hashed → immutable 365d cache.
+- `nginx client_max_body_size 2m` aligned above the backend's
+  `MAX_BODY_BYTES = 1 MB` (**[V]** app.py:65).
+- Health: `api` uses the image `HEALTHCHECK` (`/api/v1/health`,
+  liveness); `web` uses a `wget --spider` check on its own static root;
+  compose `depends_on: api: service_healthy` orders startup.
+- Vite's `server.proxy` is dev/preview-only and inert in production —
+  nginx fully replaces it **[V]** (vite.config.ts has no `preview`
+  producer configuration; production serving is nginx-defined).
+
+Run it locally (requires Docker Engine):
+
+```powershell
+docker compose -f docker-compose.yaml build
+docker compose -f docker-compose.yaml up -d
+# dashboard: http://localhost:8080   api: private only
+```
+
+Safety notes **[VERIFIED behavior]**:
+
+- `docker compose config` prints resolved environment values from
+  `.env`, including `NVIDIA_API_KEY`. Never paste or share that output.
+- Secrets enter only at runtime via `env_file: .env`; neither image
+  contains them (`.dockerignore` files exclude `.env*` at both levels).
+- `compose config` surfaced one stray variable in the local `.env`
+  (`EVALUATION_MODEL=gpt-4o`); the backend settings loader ignores
+  unknown keys (`extra="ignore"`, config.py). Clean up `.env` manually
+  if desired.
+- Docker Engine was unavailable on this machine, so `build`/`up` are
+  NOT claim-run here; the on-daemon smoke checklist below still applies
+  before any external exposure.
+
 ## 4. Persistent storage strategy **[PROPOSAL grounded in §1.4]**
 
 | Item | Requirement | Recommendation |

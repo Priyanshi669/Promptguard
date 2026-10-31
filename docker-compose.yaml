@@ -1,0 +1,48 @@
+# PromptGuard local production stack (Phase 2B).
+#
+# Secrets stay runtime-only: `.env` is read by the api service at
+# startup and is deliberately absent from the build contexts (both
+# Dockerfiles and their ignore files exclude it). No secrets are
+# committed here.
+#
+# - web is the only service with a published port (host 8080 -> nginx).
+# - api has NO published port: it is reachable only on the private
+#   Docker network, via the nginx /api/v1/ proxy.
+# - SLACK_WEBHOOK_URL stays unset in `.env` => slack_notifications
+#   reports "unconfigured" and nothing is ever sent.
+# - The api container runs as non-root UID 10001; the named volume
+#   mounted at /app/runs is writable by that UID (pre-created with
+#   appuser ownership in the image, so first-use volume seeding
+#   preserves it).
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - runs:/app/runs
+    networks:
+      - promptguard-internal
+    # NOTE: intentionally no `ports:` — the backend is not public.
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - promptguard-internal
+
+volumes:
+  runs:
+
+networks:
+  promptguard-internal:
+    driver: bridge
