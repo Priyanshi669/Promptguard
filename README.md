@@ -336,6 +336,92 @@ reported as unavailable with a reason. Like the other statistics, paired
 analysis is informational evidence: release gates, statuses, and exit
 codes are unchanged.
 
+## HTTP API and dashboard
+
+Requirements: Python 3.11+ with `uv`, Node.js 18+ with npm, and `.env`
+containing `NVIDIA_API_KEY` and `NVIDIA_MODEL`.
+
+Serve the FastAPI backend (default port 8000):
+
+```powershell
+uv run promptguard-api --port 8000
+```
+
+Serve the web dashboard (http://localhost:5173):
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Drive the full pipeline over HTTP:
+
+```powershell
+# Health and readiness
+curl http://localhost:8000/api/v1/health
+curl http://localhost:8000/api/v1/readiness
+
+# Queue an evaluation run: 3 cases, baseline comparison against the
+# newest persisted run, a passing-gate threshold, and a drift-alert
+# threshold. status=unconfigured Slack never sends messages.
+curl -X POST http://localhost:8000/api/v1/runs `
+  -H "Content-Type: application/json" `
+  -d "{\"prompt_version\":\"v1\",\"limit\":3,\"baseline_run_id\":\"latest\",\"min_summary_score\":3.0,\"max_category_drift\":0.2}"
+
+# Poll the job until a terminal status
+curl http://localhost:8000/api/v1/run-jobs/<job_id>
+
+# Read the report, list runs, download exports
+curl http://localhost:8000/api/v1/runs/<run_id>
+curl "http://localhost:8000/api/v1/runs?offset=0&limit=5"
+curl -o report.json "http://localhost:8000/api/v1/runs/<run_id>/export?format=json"
+```
+
+The dashboard pages: Overview (metrics, verdict, recent runs), Evaluation
+runs (history, queue form, run report with per-class breakdown, drift and
+confidence intervals, per-case inspector), Calibration, and read-only
+Settings (models, limits, Slack status, datasets). Each page renders only
+fields the backend actually carries; unconfigured capabilities are shown
+as absent, never faked.
+
+## Slack drift alerts
+
+Drift alerting is independent of the release gate: a run can pass or
+stay inconclusive and still raise a drift alert. Configure an incoming
+webhook in `.env` (see `.env.example`):
+
+```
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+SLACK_NOTIFICATIONS_ENABLED=true
+SLACK_TIMEOUT_SECONDS=10
+SLACK_MAX_ATTEMPTS=3
+SLACK_REPORT_URL_PREFIX=   # optional; adds a {prefix}/runs/{id} link
+```
+
+With that configuration, every run that supplies a baseline
+(`--baseline <id|latest>`, or `baseline_run_id` on the API) AND a
+`--max-category-drift` threshold evaluates the total-variation distance
+between the baseline and candidate category distributions. When the
+distance strictly exceeds the threshold, one plain-text Slack message is
+sent listing the largest category shifts, gate status, and report ID.
+
+Guarantees (enforced in code and tests):
+
+- No webhook configured or notifications disabled: nothing is ever sent.
+- Exactly one alert per (candidate run, baseline) pair; the delivery
+  outcome is persisted in the run JSON (`slack_alert`), and a repeated
+  processing of the same event never re-sends (failed attempts are the
+  only retryable case).
+- Quality-gate failures are not drift; the gate needs drop/performance
+  thresholds, while alerts need only the drift threshold.
+- The webhook URL never appears in logs, error messages, or the API.
+
+Without `--max-category-drift`, no drift alert is ever evaluated — the
+condition simply does not exist for that run.
+
+For deployment guidance, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ## Development
 
 ```
